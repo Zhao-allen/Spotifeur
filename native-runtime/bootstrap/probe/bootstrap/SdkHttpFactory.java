@@ -24,7 +24,10 @@ public final class SdkHttpFactory implements HttpConnectionFactory, AutoCloseabl
         String requestId=connection.getHeaderField("X-Request-Id");
         String spotifyRequestId=connection.getHeaderField("Spotify-Request-Id");
         String wwwAuth=connection.getHeaderField("WWW-Authenticate");
-        if(contentType!=null)out.append(" content-type=").append(contentType.replaceAll("[^A-Za-z0-9_./+;= -]","").substring(0,Math.min(80,contentType.length())));
+        if(contentType!=null) {
+            String clean=contentType.replaceAll("[^A-Za-z0-9_./+;= -]","");
+            out.append(" content-type=").append(clean.substring(0,Math.min(80,clean.length())));
+        }
         if(retryAfter!=null && retryAfter.matches("[0-9]{1,6}"))out.append(" retry-after=").append(retryAfter);
         if(wwwAuth!=null)out.append(" www-authenticate=").append(wwwAuth.split("[ ,]",2)[0].replaceAll("[^A-Za-z0-9_-]",""));
         if(requestId!=null && requestId.matches("[A-Za-z0-9._-]{1,80}"))out.append(" request-id-present=true");
