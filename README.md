@@ -1,183 +1,181 @@
-# Spotifeur
+# Spotifeur（个人定制版）
 
-<p align="center"><img src="docs/assets/img/banner.png" alt="Spotifeur — open-source music player for Android for Spotify, YouTube Music and local files, with a preview of the player" width="1200"></p>
+<p align="center"><img src="docs/assets/img/banner.png" alt="Spotifeur 安卓音乐播放器" width="1200"></p>
 
-[Download APK](https://github.com/jean-voila/Spotifeur/releases/latest) · [Website](https://jean-voila.github.io/Spotifeur/) · [FAQ](docs/FAQ.md) · [Build from source](#build-and-contribute) · [Protocol notes](protocol/)
+<p align="center">
+  <b>一个整合 Spotify、YouTube Music 与本地音乐的 Android 播放器</b><br>
+  基于开源项目 Spotifeur 二次开发，加入个人定制功能与持续优化
+</p>
 
-[![CI](https://github.com/jean-voila/Spotifeur/actions/workflows/build.yml/badge.svg)](https://github.com/jean-voila/Spotifeur/actions/workflows/build.yml)
-[![Latest release](https://img.shields.io/github/v/release/jean-voila/Spotifeur?color=0f9d63)](https://github.com/jean-voila/Spotifeur/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/jean-voila/Spotifeur/total?color=0f9d63)](https://github.com/jean-voila/Spotifeur/releases/latest)
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-0f9d63)](LICENSE)
-[![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-0f9d63)](#install-in-three-steps)
+<p align="center">
+  <a href="https://github.com/Zhao-allen/Spotifeur/releases">下载与构建版本</a> ·
+  <a href="https://github.com/Zhao-allen/Spotifeur/actions">构建状态</a> ·
+  <a href="https://github.com/Zhao-allen/Spotifeur/issues">问题反馈</a> ·
+  <a href="protocol/">协议与技术记录</a>
+</p>
 
-Spotifeur is an open-source **music player for Android**. It plays your Spotify
-library with Spotify's own Android protocols and audio engine, the YouTube Music
-catalog with or without a Google account, and audio files on your phone. A Spotify
-account is optional. The interface uses Material 3 Expressive and is available
-in English and French.
+[![构建状态](https://github.com/Zhao-allen/Spotifeur/actions/workflows/build.yml/badge.svg)](https://github.com/Zhao-allen/Spotifeur/actions/workflows/build.yml)
+[![许可证：GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+[![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-green.svg)](#安装说明)
 
-## What it looks like
+> **项目说明**
+>
+> 本仓库是基于 [Spotifeur 上游项目](https://github.com/jean-voila/Spotifeur)进行的个人二次开发版本。保留原项目的播放器能力，并在此基础上开发歌词通知增强、个性化音乐推荐等功能。
+>
+> 本仓库与 Spotify、YouTube 或原作者没有官方关联。新增功能会随着开发和测试逐步完善；尚未完成验证的功能会明确标注开发状态。
 
-![Spotifeur home screen, player, synced lyrics and queue in illustrated phone frames](docs/assets/img/preview-listening.png)
+## 项目简介
 
-![Spotifeur album page, playlist, settings and appearance options in illustrated phone frames](docs/assets/img/preview-library.png)
+Spotifeur 是一款 Android 音乐播放器，可以在同一个应用中使用 Spotify 曲库、YouTube Music 曲库和手机本地音乐。它支持歌曲搜索、播放、歌单管理、歌词、离线缓存、播放队列和多种外观设置。
 
-These are screenshots from the app, also used on the website. The phone frames
-are illustrations. Editable artwork is in [`design/`](design/).
+本个人定制版在原有功能之上，重点围绕日常听歌体验继续改进：
 
-## Features
+- 让歌词在播放通知中更容易查看；
+- 根据自己的收藏、歌单和收听历史发现新歌；
+- 持续优化首页、播放体验和 Android 设备适配。
 
-- **Spotify, YouTube Music and local files.** Search, play and combine tracks in
-  playlists. Import playlist links or CSV files, and export playlists as CSV.
-- **Library and playlists.** Saved tracks, albums, artists and Spotify playlists
-  sync with your account. Create and edit playlists, including their covers.
-- **Player, queue and lyrics.** Seek, shuffle, repeat, sleep timer, synced lyrics,
-  a queue you can reorder and listening history across all three sources.
-- **Offline playback.** Download tracks, albums and playlists. Adjust the audio
-  cache size, prefetch depth and quality for Wi-Fi, mobile data and downloads.
-- **Appearance and controls.** Light and dark themes, album colors, player styles,
-  configurable home shelves, gestures and an equalizer.
-- **Application updates.** Checks GitHub releases at startup, shows release notes,
-  downloads the APK and opens Android's installation confirmation. Dismissed updates
-  are offered again at startup after 24 hours; manual checks are always available.
-- **Music only.** No podcasts, audiobooks, videos, Canvas loops or promoted content.
+## 我的定制与增强功能
 
-<details>
-<summary><b>All features and settings</b></summary>
+这里集中记录本仓库相较上游项目新增或正在开发的内容。
 
-- **Home and library.** Pinned items, recently played tracks, downloads, liked songs, playlists, albums, artists and local files. Each home shelf can be shown or hidden, moved, and laid out as a row, a large row, a grid, a list or pills, with the number of items you choose. The buttons of album and playlist pages can be arranged as well, the others staying in a ⋮ menu. Pins are stored on the device only.
-- **Player.** Full-screen player with seek bar, queue, shuffle, repeat, sleep timer, a ⋮ button for the options of the current track (can be hidden), and the codec and bitrate of the current track if you want them. Swiping the mini player left or right changes track (it can also close the player, or do nothing).
-- **Audio quality.** Separate settings for Wi-Fi, mobile data and downloads: Normal (AAC 128 kbit/s), Very high (up to AAC 256 kbit/s) or Automatic. Playback and downloads use the quality authorized by the Spotify account: 128 kbit/s for Free, up to 256 kbit/s for Premium. Optional volume normalization from the loudness Spotify and YouTube Music publish for each track.
-- **Listening history.** Tracks played in Spotifeur from Spotify, YouTube Music and local files, together with what Spotify reports from your other apps and devices, grouped by day.
-- **Lyrics.** Synced lyrics from Spotify, with an immersive mode. When Spotify has none, Spotifeur can look them up on LRCLIB.
-- **Queue.** Reorder by dragging, swipe to remove, optional history of played tracks. The tracks you queued are shown apart from the rest of the list.
-- **Playlists.** Create a playlist on your Spotify account, rename it, set a cover from your photos, publish it on your profile, add Spotify's recommendations and remove tracks. Multi-service playlists are stored on the device, take a cover from your photos and can mix Spotify, YouTube Music and local tracks, with a badge showing each track's source. Local files can be added to Spotify playlists as Spotify's own local file references, and Spotify playlists that refer to local files play them from the phone's storage. Long-press a playlist to delete it.
-- **Converter.** Convert a playlist between Spotify, YouTube Music and multi-service playlists, in every direction (playlist page → ⋮ → Convert to…). Matches on the destination appear as they are found, uncertain ones are highlighted, and each track can be replaced by another search result or left out before the new playlist is created.
-- **Import and export.** Export a playlist as CSV, and import a CSV exported by Spotifeur or a YouTube, YouTube Music or Spotify playlist link.
-- **YouTube Music.** Search and play the YouTube Music catalog without a Google account, with the same downloads, cache, queue and playlists as Spotify tracks. Without a Spotify account, Spotify tracks play from their closest YouTube Music match (title, artist, album and duration).
-- **Google account.** Connect a Google account in Settings → Accounts to see your YouTube Music playlists in the library, create playlists on the account, rename them, make them public or private, add and remove tracks, and delete them. Audio still plays without the account.
-- **Liked YouTube Music tracks.** YouTube Music tracks can be liked like Spotify ones. They appear at the top of Liked songs, and are also liked on YouTube Music when a Google account is connected.
-- **Albums and artists.** Album pages, and artist pages with monthly listeners, popular tracks and their play counts, popular releases, albums, singles and EPs, compilations, appearances, related artists and the biography. YouTube Music tracks open YouTube Music's album and artist pages. Radios based on a track, an album, an artist or a playlist.
-- **Swipe on tracks.** Swiping a track right adds it to the queue. Each direction can be set to add to the queue, play next, save to Liked songs, remove from the playlist, or nothing. Recent searches follow the swipe-right setting.
-- **Search.** One search across Spotify, YouTube Music and the device's own files, for tracks, albums, artists and playlists, most relevant first, shown as each source answers, with paging. A setting shows a choice to search one source alone. Recent searches list what you opened or played; tapping one leaves it in place, and the current track is highlighted. Each playlist has its own search by title, artist or album, above its first track.
-- **Offline.** Download albums, playlists or tracks. Recently played and upcoming tracks are kept in a cache, encrypted for Spotify (512 MB to 32 GB, up to 20 tracks ahead). An offline mode cuts all network access from the app.
-- **Background playback.** Media notification, lock screen and Bluetooth controls, resume when headphones reconnect.
-- **Equalizer.** Presets, custom presets, bass boost, virtualizer and loudness.
-- **Appearance.** Light, dark or system theme, dynamic colors from the album art with several palette styles and high-contrast player controls, floating or full-width navigation bar, home collage patterns, carousel style, blur on or off, smooth corners, compact lists, English or French.
-- **Cast.** Google Cast for local files.
-- **Backup.** Export and import your settings, pins and multi-service playlists.
-- **Diagnostic report.** Recent errors and the account's plan entitlements, without usernames or identifiers, to paste into a bug report.
+### 1. 歌词通知增强
 
-</details>
+- **独立歌词通知**：播放时通过单独的通知展示当前歌词行，并尽可能附带下一句，方便在通知栏查看。
+- **播放状态同步**：根据歌曲播放、暂停和歌词进度更新通知内容。
+- **与媒体通知并存**：保留系统媒体播放卡片，用于查看歌曲名称和执行播放控制；歌词通知负责显示同步歌词。
+- **无歌词时隐藏**：当前歌曲没有可用同步歌词时，不显示空白歌词内容。
 
-### Compared with the official app
+**Android 系统显示说明：** Android 状态栏顶部通常只显示通知图标，不允许普通应用把任意歌词文字固定显示在状态栏。歌词主要显示在下拉通知区域。三星设备的 Now Bar 是否展示第三方应用的歌词，由 One UI 的媒体通知机制决定，本项目不保证一定出现歌词。
 
-| | Official Spotify app | Spotifeur |
-| --- | --- | --- |
-| Your library, playlists, saved tracks, albums and artists | Yes | Yes, same account, synced both ways |
-| Full-length playback, seek, queue, shuffle, repeat | Yes | Yes, with Spotify's own audio engine |
-| Search, radios, lyrics, playlist recommendations | Yes | Yes |
-| Create and edit playlists, custom covers | Yes | Yes |
-| Offline downloads and audio cache | Yes | Yes, with an adjustable cache size and prefetch depth |
-| Podcasts, audiobooks, videos | Yes | No |
-| Canvas loops, promoted content, ads banners | Yes | No |
-| YouTube Music and local files, in the same playlists | No | Yes |
-| YouTube Music playlists of a Google account | No | Yes |
-| Convert playlists between Spotify and YouTube Music | No | Yes |
-| Use without a Spotify account | No | Yes, with YouTube Music and local files |
-| Themes, player styles, navigation bar, equalizer, gestures | Few options | Many options |
+Android 13 及以上版本需要允许 Spotifeur 发送通知。通知显示效果也可能受到系统版本、省电策略和通知设置影响。
 
-Spotifeur uses the same services as the official Android app, so what you save, follow or edit in one shows up in the other.
+### 2. 基于个人歌单的智能推荐（开发中）
 
-## Install in three steps
+目标不是简单重复推荐歌单里的歌曲，而是先从你的音乐习惯中提取线索，再到更大的 Spotify 曲库中寻找可能喜欢的新歌。
 
-1. **Download.** Get `Spotifeur-vX.Y.Z.apk` from the
-   [latest release](https://github.com/jean-voila/Spotifeur/releases/latest) and
-   check its SHA-256 against the release notes.
-2. **Install.** Open the APK on an ARM64 phone with Android 8.0 or later.
-3. **Set up.** Sign in with your Spotify email address and the code Spotify sends
-   you, or with the Google account linked to your Spotify account, or continue
-   without an account for YouTube Music and local files.
+当前实现方向：
 
-See the [FAQ](docs/FAQ.md) for account, playback and installation details.
+- 汇总 Spotify 收藏歌曲、已保存歌单、最近播放和收听历史，形成推荐种子；
+- 分析多个已保存歌单，而不是只依赖单个歌单；
+- 通过 Spotify 歌单推荐和 Radio 等曲库发现能力寻找候选歌曲；
+- 尽量排除已经收藏、已经播放或已存在于已读取歌单中的歌曲；
+- 推荐结果分批展示，支持刷新后轮换下一批候选歌曲。
 
-## Technical details
+**当前开发边界：** 推荐池暂存在应用运行内存中；歌单扫描有分页上限；推荐排序目前主要依赖 Spotify 返回的候选顺序，独立的流派相似度评分、长期偏好学习和持久化反馈机制仍需继续开发与验证。因此这部分目前属于开发中的功能，不代表已经实现完整的 AI 推荐系统。
 
-<details>
-<summary><b>Protocols and audio engine</b></summary>
+### 3. 持续维护与设备适配
 
-For Spotify, Spotifeur does not use the public Web API, App Remote, a WebView or the installed Spotify app. It talks to Spotify the way the official Android app does:
+- 针对 Android 新版本检查通知权限和后台播放行为；
+- 关注三星 One UI 设备上的媒体通知显示；
+- 通过 GitHub Actions 执行 Android 编译、单元测试和 lint 检查；
+- 在上游项目更新的基础上维护个人定制改动。
 
-- **Sign-in** with Login5 and ClientToken, using a code sent to your email address (or a password). The session is encrypted with Android Keystore.
-- **Library and catalog** through Playlist4, Collection v2, Extended Metadata and the search service.
-- **Audio** through HLS manifests processed by Spotify's own native engine, loaded unchanged from the official APK you supply at build time.
+## 原项目主要功能
 
-YouTube Music goes through the anonymous InnerTube requests of music.youtube.com for search and playlists, and through the player endpoint for audio streams, read in byte ranges. With a Google account, the library and playlist edits use the same InnerTube requests as the music.youtube.com web client, with the cookies left by Google's sign-in page and its `SAPISIDHASH` authorization; audio requests stay anonymous. This part is adapted from [Resona](https://github.com/code-saksham-hash/Resona). Without a Spotify account, a Spotify playlist link is read from Spotify's public embed page, which lists its first 100 tracks.
+### 音乐来源
+- Spotify：搜索并播放 Spotify 曲库，管理账户中的收藏和歌单。
+- YouTube Music：无需 Google 账号即可搜索和播放曲库；连接 Google 账号后可管理账号歌单。
+- 本地音乐：播放设备中的音频文件。
+- 多来源歌单：在应用内组合 Spotify、YouTube Music 和本地歌曲。
 
-Everything learned along the way is documented in [`protocol/`](protocol/), as a reference you can read without the code.
+### 播放体验
+- 播放队列、随机播放、循环播放、睡眠定时器；
+- 同步歌词与沉浸式歌词界面；
+- 后台播放、锁屏媒体控制、蓝牙耳机控制；
+- 音频缓存、离线下载和不同网络环境下的音质设置；
+- 均衡器、音量标准化及多种播放器样式。
 
-Spotify downloads stay encrypted and are processed by Spotify's engine at playback
-time. Connections go directly from the app to the services. The build uses the
-official Spotify APK you supply.
+### 歌单与音乐库
+- 收藏歌曲、专辑、艺人和歌单；
+- 创建、编辑和整理歌单；
+- 导入歌单链接或 CSV，导出歌单为 CSV；
+- 在 Spotify 与 YouTube Music 等来源之间转换歌单；
+- 查看播放历史、专辑和艺人信息。
 
-</details>
+### 界面与个性化
+- 浅色、深色和跟随系统主题；
+- 首页模块显示、排序和布局设置；
+- 多种播放器样式、导航栏和手势操作；
+- 动态配色与专辑封面颜色适配。
 
-<details>
-<summary><b>Account and privacy</b></summary>
+## 界面预览
 
-- There is no Spotifeur server, no analytics and no tracking. The app talks to Spotify, to YouTube Music, and to [LRCLIB](https://lrclib.net) for lyrics Spotify does not have (title, artist, album and duration only; you can turn it off).
-- Your password is never stored. The email-code sign-in does not use one at all. Signing in to Spotify with Google happens on Google's page; Spotifeur only passes the one-time code it returns to Spotify and keeps nothing else from it.
-- The session credential stays on your device, encrypted with Android Keystore.
-- A Google account is signed in on Google's own page. Spotifeur keeps the cookies it leaves, encrypted with Android Keystore, and only sends them to music.youtube.com.
-- Each release lists the SHA-256 of the APK and of its signing certificate. You can also build the APK yourself from this source and your own copy of the official Spotify APK.
+![Spotifeur 首页、播放器、歌词和播放队列](docs/assets/img/preview-listening.png)
 
-</details>
+![Spotifeur 专辑、歌单、设置和外观页面](docs/assets/img/preview-library.png)
 
-## Documentation
+## 安装说明
 
-- [Protocol notes](protocol/): ClientToken, Login5, catalog, library, playlists, audio delivery, native engine, offline, Spotify Connect
-- [Native runtime](native-runtime/README.md)
-- [FAQ](docs/FAQ.md)
-- [Privacy](docs/PRIVACY.md)
-- [Contributing](CONTRIBUTING.md)
-- [Code of conduct](CODE_OF_CONDUCT.md)
-- [Security policy](SECURITY.md)
+本仓库的源码和 GitHub Actions 构建产物不一定等同于可直接日常使用的完整安装包。特别是 Spotify 原生音频运行时需要在构建时提供符合项目要求的官方 Spotify APKM。
 
-## Build and contribute
+- [查看本仓库 Releases](https://github.com/Zhao-allen/Spotifeur/releases)
+- [查看 GitHub Actions 构建记录](https://github.com/Zhao-allen/Spotifeur/actions)
 
-<a id="build-from-source"></a>
+下载 APK 后，请核对对应发布说明中的 SHA-256 校验值，再在 Android 设备上安装。请勿把仅用于编译、测试的无原生音频运行时 APK 当作完整播放版本。
 
-Requirements: JDK 21, Android SDK with platform 37, an ARM64 Android device (Android 8.0 or later), and the official Spotify Android **APKM, version 9.2.0.26** (build 148373686). The build checks the SHA-256 of the files it extracts and stops if they differ.
+## 从源码构建
 
-```sh
-git clone https://github.com/jean-voila/Spotifeur.git
-cd Spotifeur
-./gradlew :app:assembleDebug -PspotifyArtifact=/path/to/com.spotify.music_9.2.0.26.apkm
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
+### 环境要求
 
-You can also place the APKM at `native-runtime/artifacts/spotify-9.2.0.26.apkm`. Nothing is downloaded automatically. See [`native-runtime/README.md`](native-runtime/README.md) for details.
+- JDK 21
+- Android SDK，安装项目要求的 Android SDK Platform 37
+- Android 8.0 或更高版本的 ARM64 设备
+- 完整 Spotify 播放功能需要提供项目指定版本的官方 Spotify Android APKM：9.2.0.26（build 148373686）
 
-Without the APKM, `-PnativeRuntime=false` builds the app and runs the tests, but playback stops after the first seconds of each track. The [CI](.github/workflows/build.yml) uses this mode.
+### 获取源码
 
-```sh
-./gradlew -PnativeRuntime=false :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
-```
+    git clone https://github.com/Zhao-allen/Spotifeur.git
+    cd Spotifeur
 
-A build you make yourself is signed with your own key: uninstall a release build first (this erases the session and downloads).
+### 构建完整播放版本
 
-See [contributing](CONTRIBUTING.md), [issues](https://github.com/jean-voila/Spotifeur/issues)
-and [security reporting](SECURITY.md). The [CI](.github/workflows/build.yml) builds
-the app without the native runtime and runs unit tests and lint.
+将符合要求的 Spotify APKM 路径传给 Gradle：
 
-## Support
+    ./gradlew :app:assembleDebug -PspotifyArtifact=/path/to/com.spotify.music_9.2.0.26.apkm
 
-[GitHub Sponsors](https://github.com/sponsors/jean-voila) · [Buy me a coffee](https://buymeacoffee.com/jean_voila)
+也可以将文件放在：
 
-## Credits and license
+    native-runtime/artifacts/spotify-9.2.0.26.apkm
 
-- [librespot](https://github.com/librespot-org/librespot) for its public work on Spotify's protocols.
-- [Resona](https://github.com/code-saksham-hash/Resona) for its YouTube Music catalog and stream access.
-- [AndroidX Media3](https://github.com/androidx/media), [Jetpack Compose](https://developer.android.com/compose), [OkHttp](https://square.github.io/okhttp/), [Coil](https://coil-kt.github.io/coil/) and [LRCLIB](https://lrclib.net).
+### 仅编译、测试和代码检查
 
-[GNU General Public License v3.0](LICENSE).
+如果没有提供 APKM，可以关闭原生运行时执行编译和测试：
+
+    ./gradlew -PnativeRuntime=false :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+
+这种模式主要用于 CI 和开发验证，Spotify 播放可能只能持续歌曲开头的几秒，**不应当作为完整日常播放版本使用**。
+
+### 安装到设备
+
+    adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+自行构建的 APK 使用你自己的签名密钥。若要安装与现有版本签名不同的构建包，可能需要先卸载旧版本；卸载会清除本地会话和下载数据，请提前备份。
+
+更多原生运行时说明见 [native-runtime/README.md](native-runtime/README.md)。
+
+## 项目文档
+
+- [原生音频运行时说明](native-runtime/README.md)
+- [Spotify 协议与技术记录](protocol/)
+- [常见问题](docs/FAQ.md)
+- [隐私说明](docs/PRIVACY.md)
+- [参与贡献](CONTRIBUTING.md)
+- [安全问题反馈](SECURITY.md)
+
+## 致谢与声明
+
+本项目基于 [jean-voila/Spotifeur](https://github.com/jean-voila/Spotifeur) 开发。感谢上游作者及相关开源项目的工作。
+
+相关技术参考包括：
+
+- [librespot](https://github.com/librespot-org/librespot)
+- [Resona](https://github.com/code-saksham-hash/Resona)
+- [AndroidX Media3](https://github.com/androidx/media)
+- [Jetpack Compose](https://developer.android.com/compose)
+- [LRCLIB](https://lrclib.net)
+
+本项目遵循 [GNU General Public License v3.0](LICENSE)。使用、修改和再分发时请遵守许可证及相关服务条款。
+
+---
+
+<p align="center">个人维护 · 持续开发 · 欢迎体验与反馈</p>
