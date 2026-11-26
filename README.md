@@ -106,8 +106,11 @@ Android 13 及以上版本需要允许 Spotifeur 发送通知。通知显示效�
 
 本仓库的源码和 GitHub Actions 构建产物不一定等同于可直接日常使用的完整安装包。特别是 Spotify 原生音频运行时需要在构建时提供符合项目要求的官方 Spotify APKM。
 
-- [查看本仓库 Releases](https://github.com/Zhao-allen/Spotifeur/releases)
+- [查看本仓库 Releases](https://github.com/Zhao-allen/Spotifeur/releases)（用于公开源码版本及不含 Spotify 原生运行时的构建，不提供完整原生 APK）
 - [查看 GitHub Actions 构建记录](https://github.com/Zhao-allen/Spotifeur/actions)
+- **完整 ARM64 APK（个人使用）**：保存在独立的[私有构建仓库](https://github.com/Zhao-allen/spotifeur-private-runtime)，仅获授权的仓库成员可访问和下载。私有仓库使用单独保存的 Spotify 原生运行时构建完整 APK；不会将该专有运行时或包含它的 APK 上传到本公开仓库。
+
+公开仓库的 CI 构建会关闭原生运行时（`nativeRuntime=false`），用于源码编译、单元测试和 lint 验证。该 APK 不包含完整 Spotify 原生播放能力，不能当作完整日常播放版本。
 
 下载 APK 后，请核对对应发布说明中的 SHA-256 校验值，再在 Android 设备上安装。请勿把仅用于编译、测试的无原生音频运行时 APK 当作完整播放版本。
 
