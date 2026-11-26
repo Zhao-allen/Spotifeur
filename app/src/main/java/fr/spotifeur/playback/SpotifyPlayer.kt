@@ -195,12 +195,13 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
      * Mirrors the timed lyric into the MediaSession artist field so Android updates the existing
      * media card. Only metadata changes; the active URI, DRM configuration and queue stay intact.
      */
-    fun updateCurrentLyrics(line: String?, originalArtist: String?) {
+    fun updateCurrentLyrics(line: String?, originalArtist: String?, songId: String?) {
         val player = controller ?: return
         if (!player.isCommandAvailable(Player.COMMAND_CHANGE_MEDIA_ITEMS)) return
         val index = player.currentMediaItemIndex
         if (index !in 0 until player.mediaItemCount) return
         val current = player.getMediaItemAt(index)
+        if (songId != null && current.mediaId != songId) return
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
         val artist = current.mediaMetadata.extras?.getString(ORIGINAL_ARTIST)
             ?.trim()?.takeIf { it.isNotEmpty() } ?: originalArtist?.trim().orEmpty()
