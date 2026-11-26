@@ -192,8 +192,8 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (failed) player.prepare()
     } }
     /**
-     * The single primary media-card line switches from "title · artist" to the current lyric.
-     * When no timed lyric is active, the original title and artist are restored.
+     * The primary media-card line switches to the current lyric. The secondary line keeps the
+     * original song title and artist so Android does not show an empty/"Unknown" artist label.
      */
     fun updateCurrentLyrics(line: String?, originalArtist: String?, songId: String?) {
         val player = controller ?: return
@@ -209,9 +209,9 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         val artist = extras?.getString(ORIGINAL_ARTIST)?.takeIf { it.isNotBlank() }
             ?: originalArtist?.trim().orEmpty()
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
-        // Lyric mode replaces the title and suppresses the artist; idle mode restores both.
         val displayTitle = lyric ?: originalTitle
-        val displayArtist = if (lyric == null) artist else ""
+        val displayArtist = if (lyric == null) artist else
+            listOf(originalTitle, artist).filter { it.isNotBlank() }.joinToString(" · ")
         if (current.mediaMetadata.title?.toString() == displayTitle &&
             current.mediaMetadata.artist?.toString().orEmpty() == displayArtist &&
             current.mediaMetadata.displayTitle == null &&
