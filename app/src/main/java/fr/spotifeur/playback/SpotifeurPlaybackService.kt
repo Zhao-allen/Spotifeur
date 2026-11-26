@@ -19,6 +19,10 @@ import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.drm.HttpMediaDrmCallback
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
+import android.os.Bundle
+import com.google.common.util.concurrent.Futures
 import androidx.media3.session.MediaSessionService
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.cache.CacheDataSource
@@ -30,6 +34,7 @@ import fr.spotifeur.data.SpotifyHlsDataSource
 @UnstableApi
 class SpotifeurPlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
+    private var lyricSessionPlayer: LyricSessionPlayer? = null
     private var source: SpotifyHlsDataSource.Factory? = null
     private var nativeAudio: NativeAudioProvider? = null
     private var behavior: PlaybackBehavior? = null
@@ -109,11 +114,39 @@ class SpotifeurPlaybackService : MediaSessionService() {
         }
         val intent = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        mediaSession = MediaSession.Builder(this, player).setSessionActivity(intent)
+        val sessionPlayer = LyricSessionPlayer(player).also { lyricSessionPlayer = it }
+        mediaSession = MediaSession.Builder(this, sessionPlayer).setSessionActivity(intent)
             .setCallback(object : MediaSession.Callback {
-                override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult =
-                    if (controller.packageName == packageName || controller.isTrusted) super.onConnect(session, controller)
-                    else MediaSession.ConnectionResult.reject()
+                override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
+                    if (controller.packageName != packageName && !controller.isTrusted) return MediaSession.ConnectionResult.reject()
+                    val base = super.onConnect(session, controller)
+                    if (!base.isAccepted) return base
+                    val commands = base.availableSessionCommands.buildUpon().add(LYRIC_UPDATE_COMMAND).build()
+                    return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                        .setAvailableSessionCommands(commands)
+                        .setAvailablePlayerCommands(base.availablePlayerCommands)
+                        .build()
+                }
+
+                override fun onCustomCommand(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo,
+                    customCommand: SessionCommand,
+                    args: Bundle
+                ): com.google.common.util.concurrent.ListenableFuture<SessionResult> {
+                    if (customCommand.customAction == ACTION_UPDATE_LYRICS) {
+                        val mediaId = args.getString(EXTRA_LYRIC_MEDIA_ID).orEmpty()
+                        if (mediaId.isNotBlank()) {
+                            sessionPlayer.updateLyrics(
+                                mediaId,
+                                args.getString(EXTRA_LYRIC_INFO),
+                                args.getString(EXTRA_CURRENT_LINE)
+                            )
+                        }
+                        return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                    }
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
+                }
             }).build()
     }
     private fun updateNormalization(player: androidx.media3.common.Player) {
@@ -139,12 +172,21 @@ class SpotifeurPlaybackService : MediaSessionService() {
         EqualizerRuntime.setAudioSessionId(0)
         nativeAudio?.cancelPending()
         mediaSession?.run { player.release(); release() }; mediaSession = null
+        lyricSessionPlayer = null
         nativeAudio?.close(); nativeAudio = null
         source?.close(); source = null
         super.onDestroy()
     }
 
     internal class YouTubeChain(val recent: CacheDataSource.Factory, val kept: CacheDataSource.Factory)
+
+    private companion object {
+        const val ACTION_UPDATE_LYRICS = "fr.spotifeur.action.UPDATE_LYRICS"
+        const val EXTRA_LYRIC_MEDIA_ID = "media_id"
+        const val EXTRA_LYRIC_INFO = "lyric_info"
+        const val EXTRA_CURRENT_LINE = "current_line"
+        val LYRIC_UPDATE_COMMAND = SessionCommand(ACTION_UPDATE_LYRICS, SessionCommand.COMMAND_CODE_SESSION)
+    }
 
     internal companion object {
         /** Downloads first, then the recent cache, then the network. Nothing is written to downloads while listening. */
