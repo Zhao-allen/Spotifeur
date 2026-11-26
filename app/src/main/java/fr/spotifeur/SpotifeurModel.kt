@@ -943,7 +943,7 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
 
                 // Read every saved playlist (up to 30) rather than sampling only the first two.
                 // Two pages per playlist keep background traffic bounded on large libraries.
-                playlists.take(30).forEach { playlist ->
+                playlists.forEach { playlist ->
                     try {
                         val detail = mutableDetails.value[playlist.id]?.content
                             ?: catalog?.let { fullDetail(it, playlist, atLeast = 60, pageLimit = 2) }
