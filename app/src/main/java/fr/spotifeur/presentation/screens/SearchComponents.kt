@@ -268,7 +268,7 @@ fun SearchResultAlbumItem(
             ) {
                 SmartImage(
                     model = album.albumArtUriString,
-                    contentDescription = "Album Art: ${album.title}",
+                    contentDescription = stringResource(R.string.common_album_art_for_title, album.title),
                     targetSize = SmartImageListTargetSize,
                     modifier = Modifier
                         .size(56.dp)
@@ -397,7 +397,7 @@ fun SearchResultArtistItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Artiste",
+                    text = stringResource(R.string.common_artist),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
