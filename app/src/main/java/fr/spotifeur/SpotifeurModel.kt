@@ -942,10 +942,11 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
             try {
                 val saved = content.savedTracks
                 val recent = mutableRecent.value.filter { it.kind == MusicKind.Track }
+                val historyTracks = fullListeningHistory().map { it.track }.filter { it.kind == MusicKind.Track }
                 val playlists = content.playlists.filter { it.id.startsWith("spotify:playlist:") }
-                // Library exclusions include liked songs, every track found in the user's playlists,
-                // and recent listening history. Playlist contents are also the taste-profile seeds.
-                val excluded = (saved + recent).mapTo(mutableSetOf(), Music::id)
+                // Exclude liked songs, complete locally/Spotify-reported listening history, and
+                // every track in every saved playlist before accepting any candidate.
+                val excluded = (saved + recent + historyTracks).mapTo(mutableSetOf(), Music::id)
                 val results = LinkedHashMap<String, Music>()
                 val seedPool = LinkedHashMap<String, Music>()
                 val playlistSeeds = ArrayList<Pair<Music, List<Music>>>()
