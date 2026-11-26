@@ -235,6 +235,34 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         before = emptyList(); after = emptyList()
         controller?.stop(); controller?.clearMediaItems(); mutableState.value = Playback(shuffle = ShuffleMemory.enabled)
     }
+    /** Publishes the complete timed LRC payload for lyric-aware MediaSession clients. */
+    fun updateLyricsInfo(title: String, artist: String, album: String, songId: String, lines: List<fr.spotifeur.data.model.SyncedLine>) {
+        val player = controller ?: return
+        val index = player.currentMediaItemIndex
+        if (index !in 0 until player.mediaItemCount) return
+        val current = player.getMediaItemAt(index)
+        if (current.mediaId != songId) return
+        val lrc = lines.filter { it.line.isNotBlank() }.joinToString("\\n") { line ->
+            val ms = line.time.coerceAtLeast(0)
+            "[%02d:%02d.%03d]%s".format(java.util.Locale.ROOT, ms / 60000, ms / 1000 % 60, ms % 1000, line.line)
+        }
+        val extras = Bundle(current.mediaMetadata.extras ?: Bundle()).apply {
+            putString("lyricInfo", org.json.JSONObject().apply {
+                put("songName", title)
+                put("artist", artist)
+                put("album", album)
+                put("songId", songId)
+                put("lyricType", 0)
+                put("provider", "fr.spotifeur")
+                put("source", "fr.spotifeur")
+                put("noLyric", lrc.isBlank())
+                put("lyric", lrc)
+            }.toString())
+        }
+        val metadata = current.mediaMetadata.buildUpon().setExtras(extras).build()
+        player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
+    }
+
     /** Updates the active media-session card with the timed lyric, without replacing the audio source. */
     fun updateCurrentLyrics(line: String?) {
         val player = controller ?: return
