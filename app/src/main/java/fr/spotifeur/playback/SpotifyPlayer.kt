@@ -202,7 +202,8 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (index !in 0 until player.mediaItemCount) return
         val current = player.getMediaItemAt(index)
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
-        val artist = originalArtist?.trim().orEmpty()
+        val artist = current.mediaMetadata.extras?.getString(ORIGINAL_ARTIST)
+            ?.trim()?.takeIf { it.isNotEmpty() } ?: originalArtist?.trim().orEmpty()
         val displayArtist = when {
             lyric == null -> artist
             artist.isBlank() -> lyric
@@ -352,6 +353,7 @@ private fun Music.isPlayableTrack(): Boolean = kind == MusicKind.Track &&
 
 /** Set on the tracks the user queued ("Add to queue", "Play next"). */
 private const val QUEUED = "queued"
+private const val ORIGINAL_ARTIST = "original_artist"
 private fun MediaItem.isQueued(): Boolean = mediaMetadata.extras?.getBoolean(QUEUED) == true
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -371,7 +373,14 @@ private fun mediaItem(track: Music, queued: Boolean = false): MediaItem {
             .setExtras(Bundle().apply {
                 putInt("duration", track.durationMs); putInt("artwork", track.artwork)
                 putString("album", track.album); putString("mediaUri", track.mediaUri); putString("quality", track.quality)
+                putString(ORIGINAL_ARTIST, track.subtitle)
                 if (queued) putBoolean(QUEUED, true)
             }).build()).build()
 }
-private fun music(item: MediaItem) = musicOf(item)
+private fun music(item: MediaItem): Music {
+    // Keep the lyric-augmented MediaSession artist out of the app's queue/song model.
+    val originalArtist = item.mediaMetadata.extras?.getString(ORIGINAL_ARTIST)
+    val normalized = if (originalArtist.isNullOrBlank()) item else item.buildUpon()
+        .setMediaMetadata(item.mediaMetadata.buildUpon().setArtist(originalArtist).build()).build()
+    return musicOf(normalized)
+}
