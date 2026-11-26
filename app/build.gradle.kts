@@ -12,9 +12,37 @@ plugins {
 
 val nativeRuntime = providers.gradleProperty("nativeRuntime").map(String::toBoolean).getOrElse(true)
 
+// A persistent upload key is supplied by the private-runtime workflow via environment variables.
+// Local builds without these variables continue to use Android's normal debug signing.
+val stableKeystorePath = System.getenv("SPOTIFEUR_KEYSTORE_PATH")
+val stableKeystorePassword = System.getenv("SPOTIFEUR_KEYSTORE_PASSWORD")
+val stableKeyAlias = System.getenv("SPOTIFEUR_KEY_ALIAS")
+val stableKeyPassword = System.getenv("SPOTIFEUR_KEY_PASSWORD")
+val stableSigningEnabled = listOf(
+    stableKeystorePath, stableKeystorePassword, stableKeyAlias, stableKeyPassword
+).all { !it.isNullOrBlank() }
+
+
 android {
     namespace = "fr.spotifeur"
     compileSdk = 37
+
+    signingConfigs {
+        if (stableSigningEnabled) {
+            create("stable") {
+                storeFile = file(stableKeystorePath!!)
+                storePassword = stableKeystorePassword!!
+                keyAlias = stableKeyAlias!!
+                keyPassword = stableKeyPassword!!
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            if (stableSigningEnabled) signingConfig = signingConfigs.getByName("stable")
+        }
+    }
 
     defaultConfig {
         // A separate installation keeps the regular account and downloads intact during device tests.
