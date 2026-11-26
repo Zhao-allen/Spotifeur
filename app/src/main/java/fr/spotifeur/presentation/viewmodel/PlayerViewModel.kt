@@ -656,20 +656,23 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
     val isImmersiveTemporarilyDisabled: StateFlow<Boolean> = mutableImmersiveDisabled.asStateFlow()
     private var lyricsJob: Job? = null
 
-    // Keep timed lyrics in a separate notification; never mutate the active media item.
-    private val lyricsNotification by lazy { fr.spotifeur.playback.LyricsNotificationController(context) }
     init {
+        // Load lyrics on track changes; notification metadata then follows the timed lyric line.
+        scope.launch {
+            stablePlayerState.map { it.currentSong?.id }.distinctUntilChanged().collect { songId ->
+                if (songId == null) model.player.updateCurrentLyrics(null, null, null)
+                else loadLyricsForCurrentSong()
+            }
+        }
         scope.launch {
             combine(stablePlayerState, currentPlaybackPosition, lyricsSyncOffset) { state, position, offset ->
                 Triple(state, position, offset)
             }.collect { (state, position, offset) ->
-                lyricsNotification.update(
-                    song = state.currentSong,
-                    lyrics = state.lyrics,
-                    positionMs = position,
-                    playing = state.isPlaying,
-                    offsetMs = offset,
-                )
+                val lines = state.lyrics?.synced.orEmpty()
+                val adjustedPosition = (position + offset).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                val lineIndex = lines.indexOfLast { it.time <= adjustedPosition }
+                val currentLine = lines.getOrNull(lineIndex)?.line?.trim()?.takeIf { it.isNotEmpty() }
+                model.player.updateCurrentLyrics(currentLine, state.currentSong?.artist, state.currentSong?.id)
             }
         }
     }

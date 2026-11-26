@@ -191,6 +191,40 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         player.seekTo(positionMs.coerceAtLeast(0).toLong())
         if (failed) player.prepare()
     } }
+    /**
+     * The primary media-card line switches to the current lyric. The secondary line keeps the
+     * original song title and artist so Android does not show an empty/"Unknown" artist label.
+     */
+    fun updateCurrentLyrics(line: String?, originalArtist: String?, songId: String?) {
+        val player = controller ?: return
+        if (!player.isCommandAvailable(Player.COMMAND_CHANGE_MEDIA_ITEMS)) return
+        val index = player.currentMediaItemIndex
+        if (index !in 0 until player.mediaItemCount) return
+        val current = player.getMediaItemAt(index)
+        if (songId != null && current.mediaId != songId) return
+
+        val extras = current.mediaMetadata.extras
+        val originalTitle = extras?.getString(ORIGINAL_TITLE)?.takeIf { it.isNotBlank() }
+            ?: current.mediaMetadata.title?.toString().orEmpty()
+        val artist = extras?.getString(ORIGINAL_ARTIST)?.takeIf { it.isNotBlank() }
+            ?: originalArtist?.trim().orEmpty()
+        val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+        val displayTitle = lyric ?: originalTitle
+        val displayArtist = if (lyric == null) artist else
+            listOf(originalTitle, artist).filter { it.isNotBlank() }.joinToString(" · ")
+        if (current.mediaMetadata.title?.toString() == displayTitle &&
+            current.mediaMetadata.artist?.toString().orEmpty() == displayArtist &&
+            current.mediaMetadata.displayTitle == null &&
+            current.mediaMetadata.subtitle == null) return
+
+        val metadata = current.mediaMetadata.buildUpon()
+            .setTitle(displayTitle)
+            .setArtist(displayArtist)
+            .setDisplayTitle(null)
+            .setSubtitle(null)
+            .build()
+        player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
+    }
     fun shuffle() { controller?.let { player ->
         val queued = userQueue(player)
         val window = (0 until player.mediaItemCount).map { music(player.getMediaItemAt(it)) }
@@ -331,6 +365,8 @@ private fun Music.isPlayableTrack(): Boolean = kind == MusicKind.Track &&
 
 /** Set on the tracks the user queued ("Add to queue", "Play next"). */
 private const val QUEUED = "queued"
+private const val ORIGINAL_ARTIST = "original_artist"
+private const val ORIGINAL_TITLE = "original_title"
 private fun MediaItem.isQueued(): Boolean = mediaMetadata.extras?.getBoolean(QUEUED) == true
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -350,7 +386,19 @@ private fun mediaItem(track: Music, queued: Boolean = false): MediaItem {
             .setExtras(Bundle().apply {
                 putInt("duration", track.durationMs); putInt("artwork", track.artwork)
                 putString("album", track.album); putString("mediaUri", track.mediaUri); putString("quality", track.quality)
+                putString(ORIGINAL_ARTIST, track.subtitle)
+                putString(ORIGINAL_TITLE, track.title)
                 if (queued) putBoolean(QUEUED, true)
             }).build()).build()
 }
-private fun music(item: MediaItem) = musicOf(item)
+private fun music(item: MediaItem): Music {
+    // Keep the display-only title/lyric metadata out of the app's queue/song model.
+    val extras = item.mediaMetadata.extras
+    val originalArtist = extras?.getString(ORIGINAL_ARTIST)
+    val originalTitle = extras?.getString(ORIGINAL_TITLE)
+    val metadata = item.mediaMetadata.buildUpon()
+        .setTitle(originalTitle ?: item.mediaMetadata.title)
+        .setArtist(originalArtist ?: item.mediaMetadata.artist)
+        .build()
+    return musicOf(item.buildUpon().setMediaMetadata(metadata).build())
+}
