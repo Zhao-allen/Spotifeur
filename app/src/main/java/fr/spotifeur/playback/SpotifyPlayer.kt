@@ -57,7 +57,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
     private val appContext = context.applicationContext
     private val mutableState = MutableStateFlow(Playback())
     val state = mutableState.asStateFlow()
-    private var controller: MediaController? = null
+    private var controller: MediaController? = null\n    private val superLyricPublisher = SuperLyricPublisher(appContext)
     private var pending: Pair<List<Music>, Int>? = null
     private val future = MediaController.Builder(context,
         SessionToken(context, ComponentName(context, SpotifeurPlaybackService::class.java))).buildAsync()
@@ -243,6 +243,18 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (index !in 0 until player.mediaItemCount) return
         val current = player.getMediaItemAt(index)
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+        val position = player.currentPosition.coerceAtLeast(0L)
+        val title = current.mediaMetadata.title?.toString()
+        val artist = current.mediaMetadata.artist?.toString()
+        val album = current.mediaMetadata.albumTitle?.toString()
+        // Publish the active line to devices that implement the SuperLyric Binder protocol.
+        superLyricPublisher.publish(title, artist, album, lyric, position, position + 5_000L)
+        // Keep a separate overlay surface for lock-screen lyric display when overlay access is granted.
+        runCatching {
+            val intent = Intent(appContext, LiveLyricOverlayService::class.java)
+                .putExtra(LiveLyricOverlayService.EXTRA_LINE, lyric.orEmpty())
+            if (lyric == null) appContext.stopService(intent) else appContext.startService(intent)
+        }
         if (current.mediaMetadata.subtitle?.toString() == lyric &&
             current.mediaMetadata.description?.toString() == lyric) return
         val metadata = current.mediaMetadata.buildUpon()
