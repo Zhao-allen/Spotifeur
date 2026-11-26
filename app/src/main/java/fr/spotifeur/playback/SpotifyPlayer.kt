@@ -57,7 +57,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
     private val appContext = context.applicationContext
     private val mutableState = MutableStateFlow(Playback())
     val state = mutableState.asStateFlow()
-    private var controller: MediaController? = null\n    private val superLyricPublisher = SuperLyricPublisher(appContext)
+    private var controller: MediaController? = null\n    private val superLyricPublisher = SuperLyricPublisher(appContext)\n    private var lastPublishedLyric: String? = null
     private var pending: Pair<List<Music>, Int>? = null
     private val future = MediaController.Builder(context,
         SessionToken(context, ComponentName(context, SpotifeurPlaybackService::class.java))).buildAsync()
@@ -275,13 +275,16 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         val title = current.mediaMetadata.title?.toString()
         val artist = current.mediaMetadata.artist?.toString()
         val album = current.mediaMetadata.albumTitle?.toString()
-        // Publish the active line to devices that implement the SuperLyric Binder protocol.
-        superLyricPublisher.publish(title, artist, album, lyric, position, position + 5_000L)
-        // Keep a separate overlay surface for lock-screen lyric display when overlay access is granted.
-        runCatching {
-            val intent = Intent(appContext, LiveLyricOverlayService::class.java)
-                .putExtra(LiveLyricOverlayService.EXTRA_LINE, lyric.orEmpty())
-            if (lyric == null) appContext.stopService(intent) else appContext.startService(intent)
+        if (lastPublishedLyric != lyric) {
+            // Publish only on line changes; playback position is sampled several times per second.
+            superLyricPublisher.publish(title, artist, album, lyric, position, position + 5_000L)
+            // Keep a separate overlay surface for lock-screen lyric display when overlay access is granted.
+            runCatching {
+                val intent = Intent(appContext, LiveLyricOverlayService::class.java)
+                    .putExtra(LiveLyricOverlayService.EXTRA_LINE, lyric.orEmpty())
+                if (lyric == null) appContext.stopService(intent) else appContext.startService(intent)
+            }
+            lastPublishedLyric = lyric
         }
         if (current.mediaMetadata.subtitle?.toString() == lyric &&
             current.mediaMetadata.description?.toString() == lyric) return
