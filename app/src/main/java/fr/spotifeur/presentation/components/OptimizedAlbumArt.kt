@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.SubcomposeAsyncImage
@@ -117,7 +118,7 @@ fun OptimizedAlbumArt(
     // This avoids recompositions on painter.state changes during scroll.
     SubcomposeAsyncImage(
         model = requestModel,
-        contentDescription = "Album art of $title",
+        contentDescription = stringResource(R.string.common_album_art_for_title, title),
         modifier = modifier,
         contentScale = ContentScale.Crop,
         onSuccess = { state ->
