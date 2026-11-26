@@ -203,6 +203,9 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     private val mutableHomeRecommendations = MutableStateFlow(HomeRecommendationsUi())
     val homeRecommendations = mutableHomeRecommendations.asStateFlow()
     private var homeRecommendationsJob: Job? = null
+    /** Cached candidates allow batch rotation without repeating network discovery. */
+    private var homeRecommendationPool: List<Music> = emptyList()
+    private var homeRecommendationOffset: Int = 0
     private val mutableMessage = MutableStateFlow<String?>(null)
     val message = mutableMessage.asStateFlow()
 
@@ -925,6 +928,12 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     /** Builds a cross-catalogue taste profile from all saved Spotify playlists, likes and listening history. */
     fun refreshHomeRecommendations(force: Boolean = false) {
         if (homeRecommendationsJob?.isActive == true) return
+        if (force && homeRecommendationPool.size > 50) {
+            homeRecommendationOffset = (homeRecommendationOffset + 50) % homeRecommendationPool.size
+            val rotated = (homeRecommendationPool.drop(homeRecommendationOffset) + homeRecommendationPool.take(homeRecommendationOffset)).take(50)
+            mutableHomeRecommendations.value = HomeRecommendationsUi(tracks = rotated)
+            return
+        }
         if (!force && mutableHomeRecommendations.value.tracks.isNotEmpty()) return
         val content = mutableLibrary.value.content ?: return
         if (!online.value || catalog == null) return
@@ -939,10 +948,9 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
                 val excluded = (saved + recent).mapTo(mutableSetOf(), Music::id)
                 val results = LinkedHashMap<String, Music>()
                 val seedPool = LinkedHashMap<String, Music>()
-                val playlistCandidates = ArrayList<List<Music>>()
+                val playlistSeeds = ArrayList<Pair<Music, List<Music>>>()
 
-                // Read every saved playlist (up to 30) rather than sampling only the first two.
-                // Two pages per playlist keep background traffic bounded on large libraries.
+                // First pass: read every saved playlist and collect every track to exclude.
                 playlists.forEach { playlist ->
                     try {
                         val detail = mutableDetails.value[playlist.id]?.content
@@ -952,12 +960,7 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
                             excluded.add(track.id)
                             seedPool.putIfAbsent(track.id, track)
                         }
-                        if (tracks.isNotEmpty()) {
-                            val suggestions = playlistSuggestions(playlist, tracks.take(80))
-                                .filter { it.kind == MusicKind.Track && it.id !in excluded }
-                                .distinctBy(Music::id)
-                            playlistCandidates += suggestions
-                        }
+                        if (tracks.isNotEmpty()) playlistSeeds += playlist to tracks.take(80)
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (failure: Exception) {
                         android.util.Log.w("SpotifeurHome", "Taste profile playlist failed: ${playlist.id}", failure)
@@ -965,9 +968,22 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
                     delay(250)
                 }
 
-                // Interleave results from different playlists so one large playlist cannot dominate.
+                // Second pass: discover only after the complete playlist exclusion set is known.
+                val playlistCandidates = ArrayList<List<Music>>()
+                playlistSeeds.forEach { (playlist, tracks) ->
+                    try {
+                        playlistCandidates += playlistSuggestions(playlist, tracks)
+                            .filter { it.kind == MusicKind.Track && it.id !in excluded }
+                            .distinctBy(Music::id)
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (failure: Exception) {
+                        android.util.Log.w("SpotifeurHome", "Playlist suggestions failed: ${playlist.id}", failure)
+                    }
+                    delay(200)
+                }
+
                 var round = 0
-                while (playlistCandidates.any { round < it.size } && results.size < 80) {
+                while (playlistCandidates.any { round < it.size } && results.size < 150) {
                     playlistCandidates.forEach { candidates ->
                         candidates.getOrNull(round)?.let { track ->
                             if (track.id !in excluded) results.putIfAbsent(track.id, track)
@@ -982,7 +998,7 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
                     .distinctBy(Music::id).take(16).forEach { seedPool.putIfAbsent(it.id, it) }
                 val generator = fr.spotifeur.data.SpotifyRadio(SpotifyAccount.transport, SpotifyAccount.require(app))
                 seedPool.values.take(12).forEach { seed ->
-                    if (results.size >= 80) return@forEach
+                    if (results.size >= 150) return@forEach
                     try {
                         generator.station(seed).tracks.forEach { track ->
                             if (track.kind == MusicKind.Track && track.id !in excluded) results.putIfAbsent(track.id, track)
@@ -999,6 +1015,8 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
                     tracks = ranked.take(50),
                     loading = false,
                 )
+                homeRecommendationPool = ranked
+                homeRecommendationOffset = 0
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
                 mutableHomeRecommendations.update { it.copy(loading = false, error = readable(failure)) }
