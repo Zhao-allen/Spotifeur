@@ -245,7 +245,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
         if (current.mediaMetadata.subtitle?.toString() == lyric &&
             current.mediaMetadata.description?.toString() == lyric) return
-        val metadata = MediaMetadata.Builder(current.mediaMetadata)
+        val metadata = current.mediaMetadata.buildUpon()
             .setSubtitle(lyric)
             .setDescription(lyric)
             .build()
