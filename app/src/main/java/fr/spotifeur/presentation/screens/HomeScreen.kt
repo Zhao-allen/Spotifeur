@@ -142,6 +142,7 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
         if (content != null && online) model.refreshHomeRecommendations()
     }
     val listState = rememberLazyListState()
+    var selectedHomeCategory by rememberSaveable { mutableStateOf("全部") }
     val density = LocalDensity.current
     val scrollThresholdPx = remember(density) { with(density) { 180.dp.toPx() } }
     val isScrolled by remember {
@@ -205,7 +206,14 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                             }
                         }
                     }
-                    if (recommendations.tracks.isNotEmpty() || recommendations.loading || recommendations.error != null) {
+                    item(key = "home_category_bar", contentType = "home_category_bar") {
+                        HomeCategoryBar(
+                            selected = selectedHomeCategory,
+                            onSelected = { selectedHomeCategory = it },
+                        )
+                    }
+                    if ((selectedHomeCategory == "全部" || selectedHomeCategory == "推荐") &&
+                        (recommendations.tracks.isNotEmpty() || recommendations.loading || recommendations.error != null)) {
                         item(key = "personalized_recommendations", contentType = "personalized_recommendations") {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Row(
@@ -256,7 +264,19 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                         }
                     }
                     // Shelves in the order, layout and size chosen in Settings → Home.
-                    settings.homeLayout.filter { it.visible }.forEach { config ->
+                    settings.homeLayout.filter { config ->
+                        config.visible && when (selectedHomeCategory) {
+                            "推荐" -> config.shelf == HomeShelf.PINS
+                            "最近" -> config.shelf == HomeShelf.RECENT
+                            "歌单" -> config.shelf in setOf(
+                                HomeShelf.PLAYLISTS, HomeShelf.MULTI_SERVICE,
+                                HomeShelf.SPOTIFY_PLAYLISTS, HomeShelf.YOUTUBE_PLAYLISTS
+                            )
+                            "专辑" -> config.shelf == HomeShelf.ALBUMS || config.shelf == HomeShelf.ARTISTS
+                            "本地" -> config.shelf in setOf(HomeShelf.DOWNLOADS, HomeShelf.LOCAL_FILES)
+                            else -> true
+                        }
+                    }.forEach { config ->
                         val multi = localPlaylists.map { it.asMusic().copy(subtitle = localBadge + " · " + it.asMusic().subtitle) }
                         val openTab: (fr.spotifeur.data.model.LibraryTabId) -> () -> Unit = { tab -> { ui.requestedLibraryTab.value = tab.storageKey; openLibrary() } }
                         val title = when (config.shelf) {
@@ -331,6 +351,35 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
 
     if (reordering) PinsReorderSheet(pins, ui, model, onDismiss = { reordering = false })
     MusicOptionsHost(ui, navController, optionsFor) { optionsFor = null }
+}
+
+
+@Composable
+private fun HomeCategoryBar(selected: String, onSelected: (String) -> Unit) {
+    val categories = listOf("全部", "推荐", "最近", "歌单", "专辑", "本地")
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        items(categories, key = { it }) { category ->
+            val active = selected == category
+            Surface(
+                onClick = { onSelected(category) },
+                shape = RoundedCornerShape(50),
+                color = if (active) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = if (active) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+            ) {
+                Text(
+                    text = category,
+                    modifier = Modifier.padding(horizontal = 17.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
+                )
+            }
+        }
+    }
 }
 
 @Composable
