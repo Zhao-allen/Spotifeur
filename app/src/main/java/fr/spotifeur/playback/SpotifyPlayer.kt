@@ -191,6 +191,27 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         player.seekTo(positionMs.coerceAtLeast(0).toLong())
         if (failed) player.prepare()
     } }
+    /**
+     * Mirrors the timed lyric into the MediaSession artist field so Android updates the existing
+     * media card. Only metadata changes; the active URI, DRM configuration and queue stay intact.
+     */
+    fun updateCurrentLyrics(line: String?, originalArtist: String?) {
+        val player = controller ?: return
+        if (!player.isCommandAvailable(Player.COMMAND_CHANGE_MEDIA_ITEMS)) return
+        val index = player.currentMediaItemIndex
+        if (index !in 0 until player.mediaItemCount) return
+        val current = player.getMediaItemAt(index)
+        val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+        val artist = originalArtist?.trim().orEmpty()
+        val displayArtist = when {
+            lyric == null -> artist
+            artist.isBlank() -> lyric
+            else -> "$artist · $lyric"
+        }
+        if (current.mediaMetadata.artist?.toString() == displayArtist) return
+        val metadata = current.mediaMetadata.buildUpon().setArtist(displayArtist).build()
+        player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
+    }
     fun shuffle() { controller?.let { player ->
         val queued = userQueue(player)
         val window = (0 until player.mediaItemCount).map { music(player.getMediaItemAt(it)) }
