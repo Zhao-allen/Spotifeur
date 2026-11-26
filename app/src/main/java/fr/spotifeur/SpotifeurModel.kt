@@ -955,7 +955,7 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
                 playlists.forEach { playlist ->
                     try {
                         val detail = mutableDetails.value[playlist.id]?.content
-                            ?: catalog?.let { fullDetail(it, playlist, atLeast = 60, pageLimit = 2) }
+                            ?: catalog?.let { fullDetail(it, playlist, atLeast = Int.MAX_VALUE, pageLimit = MAX_DETAIL_PAGES) }
                         val tracks = detail?.tracks.orEmpty().filter { it.kind == MusicKind.Track }
                         tracks.forEach { track ->
                             excluded.add(track.id)
@@ -995,10 +995,17 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
 
                 // Blend saved songs and recent plays into the profile, then use Radio to discover
                 // adjacent styles across Spotify's catalogue, not just within the user's playlists.
-                (recent + saved + seedPool.values).filter { it.kind == MusicKind.Track }
-                    .distinctBy(Music::id).take(16).forEach { seedPool.putIfAbsent(it.id, it) }
+                val profileSeeds = (recent + historyTracks + saved + seedPool.values)
+                    .filter { it.kind == MusicKind.Track }
+                    .distinctBy(Music::id)
+                    .take(16)
+                profileSeeds.forEach { seedPool.putIfAbsent(it.id, it) }
+                val radioSeeds = (recent + historyTracks + saved + seedPool.values)
+                    .filter { it.kind == MusicKind.Track }
+                    .distinctBy(Music::id)
+                    .take(12)
                 val generator = fr.spotifeur.data.SpotifyRadio(SpotifyAccount.transport, SpotifyAccount.require(app))
-                seedPool.values.take(12).forEach { seed ->
+                radioSeeds.forEach { seed ->
                     if (results.size >= 150) return@forEach
                     try {
                         generator.station(seed).tracks.forEach { track ->
