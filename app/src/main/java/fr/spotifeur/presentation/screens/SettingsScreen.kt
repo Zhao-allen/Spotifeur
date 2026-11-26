@@ -216,7 +216,9 @@ private fun AppearanceSettings(model: SpotifeurModel, navController: NavHostCont
                 label = stringResource(R.string.settings_app_language_title), description = "",
                 options = mapOf(
                     AppSettings.LANGUAGE_SYSTEM to stringResource(R.string.settings_language_system),
-                    "fr" to "Français", "en" to "English",
+                    "zh-CN" to "简体中文",
+                    "en" to "English",
+                    "fr" to "Français",
                 ),
                 selectedKey = s.language,
                 onSelectionChanged = { key -> update { it.copy(language = key) }; AppLocales.apply(context, key) },
