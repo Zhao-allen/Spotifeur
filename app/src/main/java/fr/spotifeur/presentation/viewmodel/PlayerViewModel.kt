@@ -658,6 +658,23 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
 
     // Publish the current timed lyric through MediaSession so Android's existing media card can show it.
     init {
+        // Fetch lyrics as soon as the active track changes. Previously this was only
+        // triggered by opening the lyrics UI, leaving background playback without data
+        // for MediaSession or external live-lyrics integrations.
+        scope.launch {
+            stablePlayerState
+                .map { it.currentSong }
+                .distinctUntilChanged { previous, current -> previous?.id == current?.id }
+                .collect { song ->
+                    if (song == null) {
+                        lyricsJob?.cancel()
+                        mutableLyrics.value = LyricsState()
+                        model.player.updateCurrentLyrics(null)
+                    } else {
+                        loadLyricsForCurrentSong()
+                    }
+                }
+        }
         scope.launch {
             combine(stablePlayerState, currentPlaybackPosition, lyricsSyncOffset) { state, position, offset ->
                 Triple(state, position, offset)
