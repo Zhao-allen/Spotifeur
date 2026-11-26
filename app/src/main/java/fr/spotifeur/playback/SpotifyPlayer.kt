@@ -209,9 +209,11 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         val artist = extras?.getString(ORIGINAL_ARTIST)?.takeIf { it.isNotBlank() }
             ?: originalArtist?.trim().orEmpty()
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+        // Show the song title and artist before the first timed lyric. Once lyrics begin,
+        // the media card contains only the current lyric; keep the originals in extras for
+        // track changes and for restoring the song identity when lyrics are unavailable.
         val displayTitle = lyric ?: originalTitle
-        val displayArtist = if (lyric == null) artist else
-            listOf(originalTitle, artist).filter { it.isNotBlank() }.joinToString(" · ")
+        val displayArtist = if (lyric == null) artist else ""
         if (current.mediaMetadata.title?.toString() == displayTitle &&
             current.mediaMetadata.artist?.toString().orEmpty() == displayArtist &&
             current.mediaMetadata.displayTitle == null &&
