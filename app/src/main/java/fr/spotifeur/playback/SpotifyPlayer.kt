@@ -276,7 +276,8 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         val index = player.currentMediaItemIndex
         if (index !in 0 until player.mediaItemCount) return
         val mediaId = player.getMediaItemAt(index).mediaId
-        if (lyricMetadataMediaId != mediaId) {
+        val trackChanged = lyricMetadataMediaId != mediaId
+        if (trackChanged) {
             lyricMetadataMediaId = mediaId
             fullLyricInfo = null
             currentLyricLine = null
@@ -284,6 +285,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
             lastPublishedTrackId = null
         }
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+        val lineChanged = currentLyricLine != lyric
         if (lastPublishedTrackId != mediaId || lastPublishedLyric != lyric) {
             val position = player.currentPosition.coerceAtLeast(0L)
             val current = player.getMediaItemAt(index)
@@ -304,8 +306,10 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
             lastPublishedLyric = lyric
             lastPublishedTrackId = mediaId
         }
-        currentLyricLine = lyric
-        publishLyricMetadata(mediaId)
+        if (trackChanged || lineChanged) {
+            currentLyricLine = lyric
+            publishLyricMetadata(mediaId)
+        }
     }
 
     private fun publishLyricMetadata(mediaId: String) {
