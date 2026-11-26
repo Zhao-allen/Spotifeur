@@ -246,7 +246,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (index !in 0 until player.mediaItemCount) return
         val current = player.getMediaItemAt(index)
         if (current.mediaId != songId) return
-        val lrc = lines.filter { it.line.isNotBlank() }.joinToString("\\n") { line ->
+        val lrc = lines.filter { it.line.isNotBlank() }.joinToString("\n") { line ->
             val ms = line.time.coerceAtLeast(0)
             "[%02d:%02d.%03d]%s".format(java.util.Locale.ROOT, ms / 60000, ms / 1000 % 60, ms % 1000, line.line)
         }
@@ -289,6 +289,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
                 if (lyric == null) appContext.stopService(intent) else appContext.startService(intent)
             }
             lastPublishedLyric = lyric
+            lastPublishedTrackId = current.mediaId
         }
         if (current.mediaMetadata.subtitle?.toString() == lyric &&
             current.mediaMetadata.description?.toString() == lyric) return
