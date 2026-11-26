@@ -71,6 +71,9 @@
     <string name="common_album_art_for_title">Pochette d\'album pour %1$s</string>
     <string name="common_all">Tout</string>
     <string name="common_artist">Artiste</string>
+    <string name="common_artist_for_title">Artiste : %1$s</string>
+    <string name="common_play_artist">Lire l’artiste</string>
+    <string name="common_play_playlist">Lire la playlist</string>
     <string name="common_back">Retour</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_clear">Effacer</string>

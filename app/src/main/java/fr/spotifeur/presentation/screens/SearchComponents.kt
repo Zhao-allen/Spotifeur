@@ -370,7 +370,7 @@ fun SearchResultArtistItem(
             if (!artist.effectiveImageUrl.isNullOrBlank()) {
                 SmartImage(
                     model = artist.effectiveImageUrl,
-                    contentDescription = "Artist: ${artist.name}",
+                    contentDescription = stringResource(R.string.common_artist_for_title, artist.name),
                     targetSize = SmartImageListTargetSize,
                     modifier = Modifier
                         .size(56.dp)
@@ -379,7 +379,7 @@ fun SearchResultArtistItem(
             } else {
                 Icon(
                     painter = painterResource(id = R.drawable.rounded_artist_24),
-                    contentDescription = "Artist",
+                    contentDescription = stringResource(R.string.common_artist),
                     modifier = Modifier
                         .size(56.dp)
                         .background(MaterialTheme.colorScheme.tertiaryContainer, CircleShape)
@@ -411,7 +411,7 @@ fun SearchResultArtistItem(
                     contentColor = MaterialTheme.colorScheme.onTertiary
                 )
             ) {
-                Icon(Icons.Rounded.PlayArrow, contentDescription = "Play Artist", modifier = Modifier.size(24.dp))
+                Icon(Icons.Rounded.PlayArrow, contentDescription = stringResource(R.string.common_play_artist), modifier = Modifier.size(24.dp))
             }
         }
     }
@@ -524,7 +524,7 @@ fun SearchResultPlaylistItem(
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
-                    Icon(Icons.Rounded.PlayArrow, contentDescription = "Play Playlist", modifier = Modifier.size(24.dp))
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = stringResource(R.string.common_play_playlist), modifier = Modifier.size(24.dp))
                 }
             }
             if (isSelectionMode && isSelected) {
@@ -590,7 +590,7 @@ fun SearchFilterChip(
              {
                  Icon(
                      painter = painterResource(R.drawable.rounded_check_circle_24),
-                     contentDescription = "Selected",
+                     contentDescription = stringResource(R.string.common_selected),
                      tint = MaterialTheme.colorScheme.onPrimary,
                      modifier = Modifier.size(FilterChipDefaults.IconSize)
                  )

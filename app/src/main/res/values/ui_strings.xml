@@ -71,6 +71,9 @@
     <string name="common_album_art_for_title">Album art for %1$s</string>
     <string name="common_all">All</string>
     <string name="common_artist">Artist</string>
+    <string name="common_artist_for_title">Artist: %1$s</string>
+    <string name="common_play_artist">Play artist</string>
+    <string name="common_play_playlist">Play playlist</string>
     <string name="common_back">Back</string>
     <string name="common_cancel">Cancel</string>
     <string name="common_clear">Clear</string>

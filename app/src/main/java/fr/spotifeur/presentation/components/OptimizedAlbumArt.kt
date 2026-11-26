@@ -186,7 +186,7 @@ private fun renderDirectAlbumArt(
         is ImageVector -> {
             Image(
                 imageVector = model,
-                contentDescription = "Album art of $title",
+                contentDescription = stringResource(R.string.common_album_art_for_title, title),
                 contentScale = ContentScale.Crop,
                 modifier = modifier.fillMaxSize()
             )
@@ -195,7 +195,7 @@ private fun renderDirectAlbumArt(
         is Painter -> {
             Image(
                 painter = model,
-                contentDescription = "Album art of $title",
+                contentDescription = stringResource(R.string.common_album_art_for_title, title),
                 contentScale = ContentScale.Crop,
                 modifier = modifier.fillMaxSize()
             )
@@ -204,7 +204,7 @@ private fun renderDirectAlbumArt(
         is ImageBitmap -> {
             Image(
                 bitmap = model,
-                contentDescription = "Album art of $title",
+                contentDescription = stringResource(R.string.common_album_art_for_title, title),
                 contentScale = ContentScale.Crop,
                 modifier = modifier.fillMaxSize()
             )
@@ -213,7 +213,7 @@ private fun renderDirectAlbumArt(
         is Bitmap -> {
             Image(
                 bitmap = model.asImageBitmap(),
-                contentDescription = "Album art of $title",
+                contentDescription = stringResource(R.string.common_album_art_for_title, title),
                 contentScale = ContentScale.Crop,
                 modifier = modifier.fillMaxSize()
             )
@@ -326,7 +326,7 @@ internal fun albumArtMemoryCacheKey(model: Any?, targetSize: Size): String? {
 //            is AsyncImagePainter.State.Success -> {
 //                Image(
 //                    painter = currentState.painter,
-//                    contentDescription = "Album art of $title",
+//                    contentDescription = stringResource(R.string.common_album_art_for_title, title),
 //                    contentScale = ContentScale.Crop,
 //                    modifier = Modifier.fillMaxSize()
 //                )

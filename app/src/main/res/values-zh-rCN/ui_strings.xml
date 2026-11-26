@@ -57,6 +57,9 @@
     <string name="common_album_art_for_title">%1$s 的专辑封面</string>
     <string name="common_all">全部</string>
     <string name="common_artist">艺人</string>
+    <string name="common_artist_for_title">艺人：%1$s</string>
+    <string name="common_play_artist">播放艺人</string>
+    <string name="common_play_playlist">播放列表</string>
     <string name="common_back">返回</string>
     <string name="common_cancel">取消</string>
     <string name="common_clear">清除</string>
