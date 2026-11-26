@@ -656,20 +656,17 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
     val isImmersiveTemporarilyDisabled: StateFlow<Boolean> = mutableImmersiveDisabled.asStateFlow()
     private var lyricsJob: Job? = null
 
-    // Keep the live lyric line available outside the app's Compose lyrics sheet.
-    private val lyricsNotification by lazy { fr.spotifeur.playback.LyricsNotificationController(context) }
+    // Publish the current timed lyric through MediaSession so Android's existing media card can show it.
     init {
         scope.launch {
             combine(stablePlayerState, currentPlaybackPosition, lyricsSyncOffset) { state, position, offset ->
                 Triple(state, position, offset)
             }.collect { (state, position, offset) ->
-                lyricsNotification.update(
-                    song = state.currentSong,
-                    lyrics = state.lyrics,
-                    positionMs = position,
-                    playing = state.isPlaying,
-                    offsetMs = offset,
-                )
+                val lines = state.lyrics?.synced.orEmpty()
+                val adjustedPosition = (position + offset).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                val index = lines.indexOfLast { it.time <= adjustedPosition }
+                val currentLine = lines.getOrNull(index)?.line?.trim()?.takeIf { it.isNotEmpty() }
+                model.player.updateCurrentLyrics(currentLine)
             }
         }
     }

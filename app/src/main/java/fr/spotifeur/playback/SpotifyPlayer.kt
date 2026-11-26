@@ -235,6 +235,22 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         before = emptyList(); after = emptyList()
         controller?.stop(); controller?.clearMediaItems(); mutableState.value = Playback(shuffle = ShuffleMemory.enabled)
     }
+    /** Updates the active media-session card with the timed lyric, without replacing the audio source. */
+    fun updateCurrentLyrics(line: String?) {
+        val player = controller ?: return
+        if (!player.isCommandAvailable(Player.COMMAND_CHANGE_MEDIA_ITEMS)) return
+        val index = player.currentMediaItemIndex
+        if (index !in 0 until player.mediaItemCount) return
+        val current = player.getMediaItemAt(index)
+        val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+        if (current.mediaMetadata.subtitle?.toString() == lyric &&
+            current.mediaMetadata.description?.toString() == lyric) return
+        val metadata = current.mediaMetadata.buildUpon()
+            .setSubtitle(lyric)
+            .setDescription(lyric)
+            .build()
+        player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
+    }
     fun pause() { controller?.pause() }
     fun setVolume(volume: Float) { controller?.volume = volume }
     fun volume(): Float = controller?.volume ?: 1f
