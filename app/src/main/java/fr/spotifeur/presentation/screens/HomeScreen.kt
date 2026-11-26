@@ -134,11 +134,12 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
     )
     val library by model.library.collectAsStateWithLifecycle()
     val recommendations by model.homeRecommendations.collectAsStateWithLifecycle()
+    val online by model.online.collectAsStateWithLifecycle()
     val hasSong by ui.stablePlayerStateHasSong()
     val navBarCompactMode by ui.navBarCompactMode.collectAsStateWithLifecycle()
     val content = library.content
-    LaunchedEffect(content?.playlists?.map { it.id }, content?.savedTrackCount, recent.map { it.id }) {
-        if (content != null) model.refreshHomeRecommendations()
+    LaunchedEffect(content?.playlists?.map { it.id }, content?.savedTrackCount, recent.map { it.id }, online) {
+        if (content != null && online) model.refreshHomeRecommendations()
     }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
