@@ -656,6 +656,24 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
     val isImmersiveTemporarilyDisabled: StateFlow<Boolean> = mutableImmersiveDisabled.asStateFlow()
     private var lyricsJob: Job? = null
 
+    // Keep the live lyric line available outside the app's Compose lyrics sheet.
+    private val lyricsNotification by lazy { fr.spotifeur.playback.LyricsNotificationController(context) }
+    init {
+        scope.launch {
+            combine(stablePlayerState, currentPlaybackPosition, lyricsSyncOffset) { state, position, offset ->
+                Triple(state, position, offset)
+            }.collect { (state, position, offset) ->
+                lyricsNotification.update(
+                    song = state.currentSong,
+                    lyrics = state.lyrics,
+                    positionMs = position,
+                    playing = state.isPlaying,
+                    offsetMs = offset,
+                )
+            }
+        }
+    }
+
     /** Loads the current track's lyrics: saved ones, then Spotify, then LRCLIB if the setting allows. */
     fun loadLyricsForCurrentSong() {
         val song = stablePlayerState.value.currentSong ?: return
