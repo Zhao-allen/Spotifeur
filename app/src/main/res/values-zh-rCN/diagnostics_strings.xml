@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diagnostics_title">诊断报告</string>
+    <string name="diagnostics_subtitle">最近发生的错误，可附在问题反馈中</string>
+    <string name="diagnostics_description">报告包含应用和 Android 版本、Spotify 账户权益、媒体库数量以及近期错误。不会包含用户名、电子邮件地址、密码、令牌、曲目 ID 或播放列表 ID。请先重现问题，再分享此报告。</string>
+    <string name="diagnostics_send_title">分享报告</string>
+    <string name="diagnostics_send_subtitle">将报告粘贴到 GitHub Issue 或消息中</string>
+    <string name="diagnostics_share_action">分享</string>
+    <string name="diagnostics_copy_action">复制</string>
+    <string name="diagnostics_copied">报告已复制</string>
+    <string name="diagnostics_clear_title">清除最近的错误</string>
+    <string name="diagnostics_clear_subtitle">重现问题前先清空错误列表</string>
+    <string name="diagnostics_clear_action">清除</string>
+    <string name="diagnostics_loading">正在准备报告…</string>
+</resources>
