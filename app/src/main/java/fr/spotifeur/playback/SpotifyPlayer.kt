@@ -263,7 +263,12 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
                 put("lyric", lrc)
             }.toString())
         }
-        val metadata = current.mediaMetadata.buildUpon().setExtras(extras).build()
+        val lyricPayload = extras.getString("lyricInfo").orEmpty()
+        // Media3 MediaMetadata equality ignores extras; change a metadata field as a refresh sentinel.
+        val metadata = current.mediaMetadata.buildUpon()
+            .setExtras(extras)
+            .setDiscSubtitle("lyricInfo:${lyricPayload.hashCode()}")
+            .build()
         player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
     }
 
