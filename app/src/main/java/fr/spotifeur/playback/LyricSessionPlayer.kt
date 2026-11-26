@@ -23,11 +23,21 @@ internal class LyricSessionPlayer(
     private var lyricInfo: String? = null
     private var currentLine: String? = null
 
-    fun updateLyrics(mediaId: String, fullLyricInfo: String?, line: String?) {
+    fun updateLyrics(
+        mediaId: String,
+        fullLyricInfo: String?,
+        line: String?,
+        updateFullLyricInfo: Boolean,
+        updateCurrentLine: Boolean
+    ) {
         if (exoPlayer.currentMediaItem?.mediaId != mediaId) return
+        if (lyricMediaId != mediaId) {
+            lyricInfo = null
+            currentLine = null
+        }
         lyricMediaId = mediaId
-        lyricInfo = fullLyricInfo
-        currentLine = line?.takeIf(String::isNotBlank)
+        if (updateFullLyricInfo) lyricInfo = fullLyricInfo
+        if (updateCurrentLine) currentLine = line?.takeIf(String::isNotBlank)
         invalidateState()
     }
 
