@@ -203,15 +203,20 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         val current = player.getMediaItemAt(index)
         if (songId != null && current.mediaId != songId) return
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
-        val artist = current.mediaMetadata.extras?.getString(ORIGINAL_ARTIST)
-            ?.trim()?.takeIf { it.isNotEmpty() } ?: originalArtist?.trim().orEmpty()
-        val displayArtist = when {
-            lyric == null -> artist
-            artist.isBlank() -> lyric
-            else -> "$artist · $lyric"
-        }
-        if (current.mediaMetadata.artist?.toString() == displayArtist) return
-        val metadata = current.mediaMetadata.buildUpon().setArtist(displayArtist).build()
+        val extras = current.mediaMetadata.extras
+        val title = extras?.getString(ORIGINAL_TITLE)?.takeIf { it.isNotBlank() }
+            ?: current.mediaMetadata.title?.toString().orEmpty()
+        val artist = extras?.getString(ORIGINAL_ARTIST)?.takeIf { it.isNotBlank() }
+            ?: originalArtist?.trim().orEmpty()
+        // Target layout: title + artist on the first line, current lyric on the second.
+        val displayTitle = if (artist.isBlank()) title else "$title · $artist"
+        val displayLyric = lyric.orEmpty()
+        if (current.mediaMetadata.title?.toString() == displayTitle &&
+            current.mediaMetadata.artist?.toString() == displayLyric) return
+        val metadata = current.mediaMetadata.buildUpon()
+            .setTitle(displayTitle)
+            .setArtist(displayLyric)
+            .build()
         player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
     }
     fun shuffle() { controller?.let { player ->
@@ -355,6 +360,7 @@ private fun Music.isPlayableTrack(): Boolean = kind == MusicKind.Track &&
 /** Set on the tracks the user queued ("Add to queue", "Play next"). */
 private const val QUEUED = "queued"
 private const val ORIGINAL_ARTIST = "original_artist"
+private const val ORIGINAL_TITLE = "original_title"
 private fun MediaItem.isQueued(): Boolean = mediaMetadata.extras?.getBoolean(QUEUED) == true
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -375,13 +381,18 @@ private fun mediaItem(track: Music, queued: Boolean = false): MediaItem {
                 putInt("duration", track.durationMs); putInt("artwork", track.artwork)
                 putString("album", track.album); putString("mediaUri", track.mediaUri); putString("quality", track.quality)
                 putString(ORIGINAL_ARTIST, track.subtitle)
+                putString(ORIGINAL_TITLE, track.title)
                 if (queued) putBoolean(QUEUED, true)
             }).build()).build()
 }
 private fun music(item: MediaItem): Music {
-    // Keep the lyric-augmented MediaSession artist out of the app's queue/song model.
-    val originalArtist = item.mediaMetadata.extras?.getString(ORIGINAL_ARTIST)
-    val normalized = if (originalArtist.isNullOrBlank()) item else item.buildUpon()
-        .setMediaMetadata(item.mediaMetadata.buildUpon().setArtist(originalArtist).build()).build()
-    return musicOf(normalized)
+    // Keep the display-only title/lyric metadata out of the app's queue/song model.
+    val extras = item.mediaMetadata.extras
+    val originalArtist = extras?.getString(ORIGINAL_ARTIST)
+    val originalTitle = extras?.getString(ORIGINAL_TITLE)
+    val metadata = item.mediaMetadata.buildUpon()
+        .setTitle(originalTitle ?: item.mediaMetadata.title)
+        .setArtist(originalArtist ?: item.mediaMetadata.artist)
+        .build()
+    return musicOf(item.buildUpon().setMediaMetadata(metadata).build())
 }
