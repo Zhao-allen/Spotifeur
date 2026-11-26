@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_settings_title">检查更新</string>
+    <string name="update_checking">正在检查更新…</string>
+    <string name="update_available">有可用更新</string>
+    <string name="update_installed">已安装版本：%1$s</string>
+    <string name="update_action">更新</string>
+    <string name="update_later">稍后</string>
+    <string name="update_close">关闭</string>
+    <string name="update_cancel">取消</string>
+    <string name="update_retry">重试</string>
+    <string name="update_release_page">版本发布页面</string>
+    <string name="update_no_apk">打开版本发布页面下载此版本。</string>
+    <string name="update_downloading">正在下载更新</string>
+    <string name="update_progress">%1$s / %2$s MB · %3$d%%</string>
+    <string name="update_downloaded">已下载 %1$s MB</string>
+    <string name="update_ready">已准备好安装</string>
+    <string name="update_install">安装</string>
+    <string name="update_install_description">Android 会要求你确认更新。如果系统提示，请允许 Spotifeur 安装应用，然后返回此处继续。</string>
+    <string name="update_failed_title">更新不可用</string>
+    <string name="update_check_failed">无法检查更新。请重试或打开版本发布页面。</string>
+    <string name="update_download_failed">无法下载或验证更新。请重试或打开版本发布页面。</string>
+    <string name="update_current_title">已是最新版本</string>
+    <string name="update_current_description">Spotifeur %1$s。当前没有更新版本。</string>
+    <string name="update_notes_title">更新内容</string>
+</resources>
