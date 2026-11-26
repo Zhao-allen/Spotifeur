@@ -31,6 +31,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        aidl = true
     }
     if (nativeRuntime) {
         // This supplied JNI version uses dotted FindClass names rejected by CheckJNI.
