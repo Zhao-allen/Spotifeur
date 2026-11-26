@@ -192,8 +192,8 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (failed) player.prepare()
     } }
     /**
-     * Shows the artist in the media card until timed lyrics begin, then temporarily uses
-     * the artist line for the current lyric. The title remains unchanged.
+     * The single primary media-card line switches from "title · artist" to the current lyric.
+     * When no timed lyric is active, the original title and artist are restored.
      */
     fun updateCurrentLyrics(line: String?, originalArtist: String?, songId: String?) {
         val player = controller ?: return
@@ -204,21 +204,22 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (songId != null && current.mediaId != songId) return
 
         val extras = current.mediaMetadata.extras
-        val title = extras?.getString(ORIGINAL_TITLE)?.takeIf { it.isNotBlank() }
+        val originalTitle = extras?.getString(ORIGINAL_TITLE)?.takeIf { it.isNotBlank() }
             ?: current.mediaMetadata.title?.toString().orEmpty()
         val artist = extras?.getString(ORIGINAL_ARTIST)?.takeIf { it.isNotBlank() }
             ?: originalArtist?.trim().orEmpty()
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
-        // One secondary line only: artist before lyrics, current lyric once available.
-        val secondaryText = lyric ?: artist
-        if (current.mediaMetadata.title?.toString() == title &&
-            current.mediaMetadata.artist?.toString().orEmpty() == secondaryText &&
+        // Lyric mode replaces the title and suppresses the artist; idle mode restores both.
+        val displayTitle = lyric ?: originalTitle
+        val displayArtist = if (lyric == null) artist else ""
+        if (current.mediaMetadata.title?.toString() == displayTitle &&
+            current.mediaMetadata.artist?.toString().orEmpty() == displayArtist &&
             current.mediaMetadata.displayTitle == null &&
             current.mediaMetadata.subtitle == null) return
 
         val metadata = current.mediaMetadata.buildUpon()
-            .setTitle(title)
-            .setArtist(secondaryText)
+            .setTitle(displayTitle)
+            .setArtist(displayArtist)
             .setDisplayTitle(null)
             .setSubtitle(null)
             .build()
