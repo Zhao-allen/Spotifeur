@@ -57,7 +57,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
     private val appContext = context.applicationContext
     private val mutableState = MutableStateFlow(Playback())
     val state = mutableState.asStateFlow()
-    private var controller: MediaController? = null\n    private val superLyricPublisher = SuperLyricPublisher(appContext)\n    private var lastPublishedLyric: String? = null
+    private var controller: MediaController? = null\n    private val superLyricPublisher = SuperLyricPublisher(appContext)\n    private var lastPublishedLyric: String? = null\n    private var lastPublishedTrackId: String? = null
     private var pending: Pair<List<Music>, Int>? = null
     private val future = MediaController.Builder(context,
         SessionToken(context, ComponentName(context, SpotifeurPlaybackService::class.java))).buildAsync()
@@ -275,7 +275,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         val title = current.mediaMetadata.title?.toString()
         val artist = current.mediaMetadata.artist?.toString()
         val album = current.mediaMetadata.albumTitle?.toString()
-        if (lastPublishedLyric != lyric) {
+        if (lastPublishedTrackId != current.mediaId || lastPublishedLyric != lyric) {
             // Publish only on line changes; playback position is sampled several times per second.
             superLyricPublisher.publish(title, artist, album, lyric, position, position + 5_000L)
             // Keep a separate overlay surface for lock-screen lyric display when overlay access is granted.
