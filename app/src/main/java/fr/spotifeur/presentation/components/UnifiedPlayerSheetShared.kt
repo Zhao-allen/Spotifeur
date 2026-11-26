@@ -92,7 +92,7 @@ internal fun MiniPlayerContentInternal(
             key(song.id) {
                 SmartImage(
                     model = albumArtModel,
-                    contentDescription = "Cover of ${song.title}",
+                    contentDescription = stringResource(R.string.album_cover_for, song.title),
                     shape = CircleShape,
                     targetSize = Size(150, 150),
                     modifier = Modifier.size(44.dp),
@@ -166,7 +166,7 @@ internal fun MiniPlayerContentInternal(
         ) {
             Icon(
                 imageVector = Icons.Rounded.SkipPrevious,
-                contentDescription = "Anterior",
+                contentDescription = stringResource(R.string.common_previous_track),
                 tint = LocalMaterialTheme.current.primary,
                 modifier = Modifier.size(22.dp)
             )
@@ -191,7 +191,7 @@ internal fun MiniPlayerContentInternal(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                contentDescription = if (isPlaying) stringResource(R.string.common_pause) else stringResource(R.string.common_play),
                 tint = LocalMaterialTheme.current.onPrimary,
                 modifier = Modifier.size(22.dp)
             )
@@ -213,7 +213,7 @@ internal fun MiniPlayerContentInternal(
         ) {
             Icon(
                 imageVector = Icons.Rounded.SkipNext,
-                contentDescription = "Siguiente",
+                contentDescription = stringResource(R.string.common_next_track),
                 tint = LocalMaterialTheme.current.primary,
                 modifier = Modifier.size(22.dp)
             )
