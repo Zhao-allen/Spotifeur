@@ -98,6 +98,8 @@ data class LibraryUi(val content: HomeLibrary? = null, val loading: Boolean = fa
 }
 data class DetailUi(val content: CatalogDetail? = null, val loading: Boolean = false, val error: String? = null)
 
+data class HomeRecommendationsUi(val tracks: List<Music> = emptyList(), val loading: Boolean = false, val error: String? = null)
+
 class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     val player = SpotifyPlayer(app, viewModelScope)
     private val pinnedStore = PinnedStore(app)
@@ -198,6 +200,9 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     val details = mutableDetails.asStateFlow()
     private val mutableRecent = MutableStateFlow<List<Music>>(emptyList())
     val recent = mutableRecent.asStateFlow()
+    private val mutableHomeRecommendations = MutableStateFlow(HomeRecommendationsUi())
+    val homeRecommendations = mutableHomeRecommendations.asStateFlow()
+    private var homeRecommendationsJob: Job? = null
     private val mutableMessage = MutableStateFlow<String?>(null)
     val message = mutableMessage.asStateFlow()
 
@@ -916,6 +921,62 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     }
     internal suspend fun playlistSuggestions(playlist: Music, tracks: List<Music>): List<Music> =
         spotifyPlaylists.recommendations(playlist.id, tracks, mutableLibrary.value.content?.savedTracks.orEmpty())
+
+    /** Builds a small personalized home shelf from the user's saved playlists, likes and recent plays. */
+    fun refreshHomeRecommendations(force: Boolean = false) {
+        if (homeRecommendationsJob?.isActive == true) return
+        if (!force && mutableHomeRecommendations.value.tracks.isNotEmpty()) return
+        val content = mutableLibrary.value.content ?: return
+        if (!online.value || catalog == null) return
+        homeRecommendationsJob = viewModelScope.launch {
+            mutableHomeRecommendations.update { it.copy(loading = true, error = null) }
+            try {
+                val saved = content.savedTracks
+                val excluded = saved.mapTo(mutableSetOf(), Music::id)
+                val seeds = (mutableRecent.value + saved).filter { it.kind == MusicKind.Track }
+                    .distinctBy(Music::id).take(6)
+                val results = LinkedHashMap<String, Music>()
+                // Native Spotify playlist suggestions are the strongest signal: use up to two
+                // of the user's own saved playlists and a bounded number of their tracks.
+                content.playlists.filter { it.id.startsWith("spotify:playlist:") }.take(2).forEach { playlist ->
+                    try {
+                        val detail = mutableDetails.value[playlist.id]?.content
+                            ?: catalog?.let { fullDetail(it, playlist, atLeast = 30, pageLimit = 2) }
+                        if (detail != null) {
+                            playlistSuggestions(playlist, detail.tracks.take(100)).forEach { track ->
+                                if (track.id !in excluded) results.putIfAbsent(track.id, track)
+                            }
+                        }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (failure: Exception) {
+                        android.util.Log.w("SpotifeurHome", "Playlist recommendation failed", failure)
+                    }
+                }
+                // Fill gaps with radios seeded by recent plays and liked tracks.
+                if (results.size < 12 && seeds.isNotEmpty()) {
+                    val session = SpotifyAccount.require(app)
+                    val generator = fr.spotifeur.data.SpotifyRadio(SpotifyAccount.transport, session)
+                    seeds.take(3).forEach { seed ->
+                        try {
+                            generator.station(seed).tracks.forEach { track ->
+                                if (track.id !in excluded) results.putIfAbsent(track.id, track)
+                            }
+                        } catch (cancelled: CancellationException) { throw cancelled }
+                        catch (failure: Exception) {
+                            android.util.Log.w("SpotifeurHome", "Radio recommendation failed", failure)
+                        }
+                    }
+                }
+                mutableHomeRecommendations.value = HomeRecommendationsUi(
+                    tracks = results.values.take(20),
+                    loading = false,
+                )
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                mutableHomeRecommendations.update { it.copy(loading = false, error = readable(failure)) }
+            }
+        }
+    }
 
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     internal suspend fun addSpotifyPlaylistTracks(playlist: Music, tracks: List<Music>) {
