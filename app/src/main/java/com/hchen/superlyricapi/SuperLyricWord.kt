@@ -9,7 +9,12 @@ class SuperLyricWord(
     var endTime: Long = 0L
 ) : Parcelable {
     var delay: Long = (endTime - startTime).coerceAtLeast(0L)
-    private constructor(p: Parcel) : this(p.readString() ?: "", p.readLong(), p.readLong()) { delay = p.readLong() }
+    private constructor(p: Parcel) : this() {
+        word = p.readString() ?: ""
+        delay = p.readLong()
+        startTime = p.readLong()
+        endTime = p.readLong()
+    }
     override fun writeToParcel(p: Parcel, flags: Int) {
         p.writeString(word); p.writeLong(delay); p.writeLong(startTime); p.writeLong(endTime)
     }
