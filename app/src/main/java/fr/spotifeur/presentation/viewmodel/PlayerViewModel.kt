@@ -659,6 +659,14 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
     // Keep timed lyrics in a separate notification; never mutate the active media item.
     private val lyricsNotification by lazy { fr.spotifeur.playback.LyricsNotificationController(context) }
     init {
+        // Fetch timed lyrics as soon as a track becomes current. The notification must not
+        // depend on the user opening the lyrics sheet first.
+        scope.launch {
+            stablePlayerState.map { it.currentSong?.id }.distinctUntilChanged().collect { songId ->
+                if (songId == null) lyricsNotification.hide()
+                else loadLyricsForCurrentSong()
+            }
+        }
         scope.launch {
             combine(stablePlayerState, currentPlaybackPosition, lyricsSyncOffset) { state, position, offset ->
                 Triple(state, position, offset)
