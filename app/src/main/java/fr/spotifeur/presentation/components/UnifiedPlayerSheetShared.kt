@@ -133,8 +133,8 @@ internal fun MiniPlayerContentInternal(
 
             AutoScrollingText(
                 text = when {
-                    isCastConnecting -> "Connecting to device…"
-                    isPreparingPlayback -> "Preparing playback…"
+                    isCastConnecting -> stringResource(R.string.player_connecting_device)
+                    isPreparingPlayback -> stringResource(R.string.player_preparing_playback)
                     else -> song.title
                 },
                 style = titleStyle,
@@ -142,7 +142,7 @@ internal fun MiniPlayerContentInternal(
                 canScroll = canScroll
             )
             AutoScrollingText(
-                text = if (isPreparingPlayback) "Loading audio…" else song.displayArtist,
+                text = if (isPreparingPlayback) stringResource(R.string.player_loading_audio) else song.displayArtist,
                 style = artistStyle,
                 gradientEdgeColor = LocalMaterialTheme.current.primaryContainer,
                 canScroll = canScroll
