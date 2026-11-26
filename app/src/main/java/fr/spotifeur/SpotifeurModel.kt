@@ -922,7 +922,7 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     internal suspend fun playlistSuggestions(playlist: Music, tracks: List<Music>): List<Music> =
         spotifyPlaylists.recommendations(playlist.id, tracks, mutableLibrary.value.content?.savedTracks.orEmpty())
 
-    /** Builds a small personalized home shelf from the user's saved playlists, likes and recent plays. */
+    /** Builds a cross-catalogue taste profile from all saved Spotify playlists, likes and listening history. */
     fun refreshHomeRecommendations(force: Boolean = false) {
         if (homeRecommendationsJob?.isActive == true) return
         if (!force && mutableHomeRecommendations.value.tracks.isNotEmpty()) return
@@ -932,43 +932,71 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
             mutableHomeRecommendations.update { it.copy(loading = true, error = null) }
             try {
                 val saved = content.savedTracks
-                val excluded = saved.mapTo(mutableSetOf(), Music::id)
-                val seeds = (mutableRecent.value + saved).filter { it.kind == MusicKind.Track }
-                    .distinctBy(Music::id).take(6)
+                val recent = mutableRecent.value.filter { it.kind == MusicKind.Track }
+                val playlists = content.playlists.filter { it.id.startsWith("spotify:playlist:") }
+                // Library exclusions include liked songs, every track found in the user's playlists,
+                // and recent listening history. Playlist contents are also the taste-profile seeds.
+                val excluded = (saved + recent).mapTo(mutableSetOf(), Music::id)
                 val results = LinkedHashMap<String, Music>()
-                // Native Spotify playlist suggestions are the strongest signal: use up to two
-                // of the user's own saved playlists and a bounded number of their tracks.
-                content.playlists.filter { it.id.startsWith("spotify:playlist:") }.take(2).forEach { playlist ->
+                val seedPool = LinkedHashMap<String, Music>()
+                val playlistCandidates = ArrayList<List<Music>>()
+
+                // Read every saved playlist (up to 30) rather than sampling only the first two.
+                // Two pages per playlist keep background traffic bounded on large libraries.
+                playlists.take(30).forEach { playlist ->
                     try {
                         val detail = mutableDetails.value[playlist.id]?.content
-                            ?: catalog?.let { fullDetail(it, playlist, atLeast = 30, pageLimit = 2) }
-                        if (detail != null) {
-                            playlistSuggestions(playlist, detail.tracks.take(100)).forEach { track ->
-                                if (track.id !in excluded) results.putIfAbsent(track.id, track)
-                            }
+                            ?: catalog?.let { fullDetail(it, playlist, atLeast = 60, pageLimit = 2) }
+                        val tracks = detail?.tracks.orEmpty().filter { it.kind == MusicKind.Track }
+                        tracks.forEach { track ->
+                            excluded.add(track.id)
+                            seedPool.putIfAbsent(track.id, track)
+                        }
+                        if (tracks.isNotEmpty()) {
+                            val suggestions = playlistSuggestions(playlist, tracks.take(80))
+                                .filter { it.kind == MusicKind.Track && it.id !in excluded }
+                                .distinctBy(Music::id)
+                            playlistCandidates += suggestions
                         }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (failure: Exception) {
-                        android.util.Log.w("SpotifeurHome", "Playlist recommendation failed", failure)
+                        android.util.Log.w("SpotifeurHome", "Taste profile playlist failed: ${playlist.id}", failure)
                     }
+                    delay(250)
                 }
-                // Fill gaps with radios seeded by recent plays and liked tracks.
-                if (results.size < 12 && seeds.isNotEmpty()) {
-                    val session = SpotifyAccount.require(app)
-                    val generator = fr.spotifeur.data.SpotifyRadio(SpotifyAccount.transport, session)
-                    seeds.take(3).forEach { seed ->
-                        try {
-                            generator.station(seed).tracks.forEach { track ->
-                                if (track.id !in excluded) results.putIfAbsent(track.id, track)
-                            }
-                        } catch (cancelled: CancellationException) { throw cancelled }
-                        catch (failure: Exception) {
-                            android.util.Log.w("SpotifeurHome", "Radio recommendation failed", failure)
+
+                // Interleave results from different playlists so one large playlist cannot dominate.
+                var round = 0
+                while (playlistCandidates.any { round < it.size } && results.size < 80) {
+                    playlistCandidates.forEach { candidates ->
+                        candidates.getOrNull(round)?.let { track ->
+                            if (track.id !in excluded) results.putIfAbsent(track.id, track)
                         }
                     }
+                    round++
                 }
+
+                // Blend saved songs and recent plays into the profile, then use Radio to discover
+                // adjacent styles across Spotify's catalogue, not just within the user's playlists.
+                (recent + saved + seedPool.values).filter { it.kind == MusicKind.Track }
+                    .distinctBy(Music::id).take(16).forEach { seedPool.putIfAbsent(it.id, it) }
+                val generator = fr.spotifeur.data.SpotifyRadio(SpotifyAccount.transport, SpotifyAccount.require(app))
+                seedPool.values.take(12).forEach { seed ->
+                    if (results.size >= 80) return@forEach
+                    try {
+                        generator.station(seed).tracks.forEach { track ->
+                            if (track.kind == MusicKind.Track && track.id !in excluded) results.putIfAbsent(track.id, track)
+                        }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (failure: Exception) {
+                        android.util.Log.w("SpotifeurHome", "Radio discovery failed for ${seed.id}", failure)
+                    }
+                    delay(200)
+                }
+
+                val ranked = results.values.toList()
                 mutableHomeRecommendations.value = HomeRecommendationsUi(
-                    tracks = results.values.take(20),
+                    tracks = ranked.take(50),
                     loading = false,
                 )
             } catch (cancelled: CancellationException) { throw cancelled }
