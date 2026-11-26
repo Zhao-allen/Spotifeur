@@ -85,6 +85,9 @@
     <string name="common_ok">OK</string>
     <string name="common_percentage_text">%1$d%%</string>
     <string name="common_play">Play</string>
+    <string name="common_pause">Pause</string>
+    <string name="common_previous_track">Previous track</string>
+    <string name="common_next_track">Next track</string>
     <string name="common_play_album">Play album</string>
     <string name="common_reset">Reset</string>
     <string name="common_save">Save</string>
