@@ -123,8 +123,13 @@ internal class SpotifyNativeRuntime private constructor(private val engine: Any,
             val entry = child.loadClass("probe.bootstrap.NativeEngine")
             entry.getMethod("load", String::class.java).invoke(null,
                 File(app.applicationInfo.nativeLibraryDir, "liborbit-jni-spotify.so").path)
-            child.loadClass("probe.bootstrap.SdkHttpFactory").getField("keyResponseListener")
+            val httpFactory = child.loadClass("probe.bootstrap.SdkHttpFactory")
+            httpFactory.getField("keyResponseListener")
                 .set(null, java.util.function.BiConsumer<String, Int> { file, status -> AudioGrant.onKeyResponse(file, status) })
+            httpFactory.getField("keyResponseDetailsListener")
+                .set(null, java.util.function.BiConsumer<Int, String> { status, details ->
+                    fr.spotifeur.data.diagnostics.DiagnosticLog.record("audio", "key response status=$status $details")
+                })
             loader = child
             return entry
         }

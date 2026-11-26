@@ -15,6 +15,25 @@ public final class SdkHttpFactory implements HttpConnectionFactory, AutoCloseabl
     public static volatile boolean offlineForTest;
     /** Receives (file ID, HTTP status) for every key-service response; set by the app. */
     public static volatile java.util.function.BiConsumer<String,Integer> keyResponseListener;
+    /** Reports only an HTTP status and a small allowlist of non-secret response metadata. */
+    public static volatile java.util.function.BiConsumer<Integer,String> keyResponseDetailsListener;
+    private static String safeKeyResponseDetails(HttpURLConnection connection) {
+        StringBuilder out=new StringBuilder();
+        String contentType=connection.getHeaderField("Content-Type");
+        String retryAfter=connection.getHeaderField("Retry-After");
+        String requestId=connection.getHeaderField("X-Request-Id");
+        String spotifyRequestId=connection.getHeaderField("Spotify-Request-Id");
+        String wwwAuth=connection.getHeaderField("WWW-Authenticate");
+        if(contentType!=null) {
+            String clean=contentType.replaceAll("[^A-Za-z0-9_./+;= -]","");
+            out.append(" content-type=").append(clean.substring(0,Math.min(80,clean.length())));
+        }
+        if(retryAfter!=null && retryAfter.matches("[0-9]{1,6}"))out.append(" retry-after=").append(retryAfter);
+        if(wwwAuth!=null)out.append(" www-authenticate=").append(wwwAuth.split("[ ,]",2)[0].replaceAll("[^A-Za-z0-9_-]",""));
+        if(requestId!=null && requestId.matches("[A-Za-z0-9._-]{1,80}"))out.append(" request-id-present=true");
+        if(spotifyRequestId!=null && spotifyRequestId.matches("[A-Za-z0-9._-]{1,80}"))out.append(" spotify-request-id-present=true");
+        return out.toString().trim();
+    }
     /** Top-level field numbers and varint values of a request body; length-delimited fields show only their size. */
     private static String shape(byte[] body) {
         if(body==null)return "none";
@@ -237,6 +256,12 @@ public final class SdkHttpFactory implements HttpConnectionFactory, AutoCloseabl
                         java.util.function.BiConsumer<String,Integer> listener=keyResponseListener;
                         if(keyed!=null && listener!=null && status!=401) {
                             try{listener.accept(keyed,status);}catch(RuntimeException ignored){}
+                        }
+                        if(keyed!=null && status>=400) {
+                            String details=safeKeyResponseDetails(connection);
+                            android.util.Log.w("SpotifeurNativeHttp","audio key response status="+status+details);
+                            java.util.function.BiConsumer<Integer,String> detailListener=keyResponseDetailsListener;
+                            if(detailListener!=null)try{detailListener.accept(status,details);}catch(RuntimeException ignored){}
                         }
                         String category=path.contains("license")?"license":path.contains("sneaktables")?"manifest":path.contains("key")?"media-state":"service";
                         if(status>=400)android.util.Log.w("SpotifeurNativeHttp","response category="+category+" status="+status);
