@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
             val model: SpotifeurModel = viewModel()
             val settings by model.ui.settings.collectAsStateWithLifecycle()
             val downloads by model.ui.downloadCollections.collectAsStateWithLifecycle()
+            val playback by model.ui.stablePlayerState.collectAsStateWithLifecycle()
             val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
             // Asked once, at first launch, so local files are in the library right away.
             val media = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -56,10 +57,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val downloading = downloads.values.any { it.isActive }
-            LaunchedEffect(downloading) {
-                if (downloading && Build.VERSION.SDK_INT >= 33 &&
+            val hasActivePlayback = playback.currentSong != null
+            LaunchedEffect(downloading, hasActivePlayback) {
+                if ((downloading || hasActivePlayback) && Build.VERSION.SDK_INT >= 33 &&
                     ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    val preferences = getSharedPreferences("download_notifications", MODE_PRIVATE)
+                    // Request when the user first uses a feature that needs notifications:
+                    // playback lyrics or download progress. One shared prompt avoids racing dialogs.
+                    val preferences = getSharedPreferences("notification_permission", MODE_PRIVATE)
                     if (!preferences.getBoolean("requested", false)) {
                         preferences.edit().putBoolean("requested", true).apply()
                         notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
