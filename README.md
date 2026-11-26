@@ -4,12 +4,12 @@
 
 <p align="center">
   <b>一个整合 Spotify、YouTube Music 与本地音乐的 Android 播放器</b><br>
-  基于开源项目 Spotifeur 二次开发，加入个人定制功能与持续优化
+  基于开源项目 Spotifeur 二次开发，加入个人定制功能并持续优化
 </p>
 
 <p align="center">
-  <a href="https://github.com/Zhao-allen/Spotifeur/releases">下载与构建版本</a> ·
-  <a href="https://github.com/Zhao-allen/Spotifeur/actions">构建状态</a> ·
+  <a href="https://github.com/Zhao-allen/Spotifeur/releases">查看发布版本</a> ·
+  <a href="https://github.com/Zhao-allen/Spotifeur/actions">查看自动构建</a> ·
   <a href="https://github.com/Zhao-allen/Spotifeur/issues">问题反馈</a> ·
   <a href="protocol/">协议与技术记录</a>
 </p>
@@ -35,8 +35,6 @@ Spotifeur 是一款 Android 音乐播放器，可以在同一个应用中使用 
 - 持续优化首页、播放体验和 Android 设备适配。
 
 ## 我的定制与增强功能
-
-这里集中记录本仓库相较上游项目新增或正在开发的内容。
 
 ### 1. 歌词通知增强
 
@@ -73,10 +71,10 @@ Android 13 及以上版本需要允许 Spotifeur 发送通知。通知显示效�
 ## 原项目主要功能
 
 ### 音乐来源
-- Spotify：搜索并播放 Spotify 曲库，管理账户中的收藏和歌单。
-- YouTube Music：无需 Google 账号即可搜索和播放曲库；连接 Google 账号后可管理账号歌单。
-- 本地音乐：播放设备中的音频文件。
-- 多来源歌单：在应用内组合 Spotify、YouTube Music 和本地歌曲。
+- **Spotify**：搜索并播放 Spotify 曲库，管理账户中的收藏和歌单。
+- **YouTube Music**：无需 Google 账号即可搜索和播放曲库；连接 Google 账号后可管理账号歌单。
+- **本地音乐**：播放设备中的音频文件。
+- **多来源歌单**：在应用内组合 Spotify、YouTube Music 和本地歌曲。
 
 ### 播放体验
 - 播放队列、随机播放、循环播放、睡眠定时器；
@@ -120,34 +118,44 @@ Android 13 及以上版本需要允许 Spotifeur 发送通知。通知显示效�
 - JDK 21
 - Android SDK，安装项目要求的 Android SDK Platform 37
 - Android 8.0 或更高版本的 ARM64 设备
-- 完整 Spotify 播放功能需要提供项目指定版本的官方 Spotify Android APKM：9.2.0.26（build 148373686）
+- 完整 Spotify 播放功能需要提供项目指定版本的官方 Spotify Android APKM：`9.2.0.26`（build `148373686`）
 
 ### 获取源码
 
-    git clone https://github.com/Zhao-allen/Spotifeur.git
-    cd Spotifeur
+```bash
+git clone https://github.com/Zhao-allen/Spotifeur.git
+cd Spotifeur
+```
 
 ### 构建完整播放版本
 
 将符合要求的 Spotify APKM 路径传给 Gradle：
 
-    ./gradlew :app:assembleDebug -PspotifyArtifact=/path/to/com.spotify.music_9.2.0.26.apkm
+```bash
+./gradlew :app:assembleDebug -PspotifyArtifact=/path/to/com.spotify.music_9.2.0.26.apkm
+```
 
 也可以将文件放在：
 
-    native-runtime/artifacts/spotify-9.2.0.26.apkm
+```
+native-runtime/artifacts/spotify-9.2.0.26.apkm
+```
 
 ### 仅编译、测试和代码检查
 
 如果没有提供 APKM，可以关闭原生运行时执行编译和测试：
 
-    ./gradlew -PnativeRuntime=false :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```bash
+./gradlew -PnativeRuntime=false :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
 
 这种模式主要用于 CI 和开发验证，Spotify 播放可能只能持续歌曲开头的几秒，**不应当作为完整日常播放版本使用**。
 
 ### 安装到设备
 
-    adb install -r app/build/outputs/apk/debug/app-debug.apk
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
 自行构建的 APK 使用你自己的签名密钥。若要安装与现有版本签名不同的构建包，可能需要先卸载旧版本；卸载会清除本地会话和下载数据，请提前备份。
 
