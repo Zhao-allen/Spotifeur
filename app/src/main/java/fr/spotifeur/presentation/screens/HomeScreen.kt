@@ -236,7 +236,7 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                                 if (recommendations.tracks.isNotEmpty()) {
                                     ShelfItems(
                                         recommendations.tracks,
-                                        ShelfStyle.HORIZONTAL,
+                                        ShelfStyle.CAROUSEL,
                                         ui,
                                         onClick = { ui.playItem(it) },
                                         onLongPress = showOptions,
