@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.size.Size
+import fr.spotifeur.R
 import fr.spotifeur.data.model.Song
 import fr.spotifeur.ui.theme.GoogleSansRounded
 
