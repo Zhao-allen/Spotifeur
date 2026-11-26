@@ -147,7 +147,7 @@ class SpotifeurPlaybackService : MediaSessionService() {
                         }
                         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
                     }
-                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
+                    return Futures.immediateFuture(SessionResult(androidx.media3.session.SessionError.ERROR_NOT_SUPPORTED))
                 }
             }).build()
     }
