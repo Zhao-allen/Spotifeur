@@ -239,7 +239,7 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                                         ShelfStyle.CAROUSEL,
                                         ui,
                                         onClick = { ui.playItem(it) },
-                                        onLongPress = showOptions,
+                                        onLongClick = showOptions,
                                     ) { item, modifier ->
                                         PinnedPill(item, ui, modifier, { ui.playItem(item) }, { showOptions(item) })
                                     }
