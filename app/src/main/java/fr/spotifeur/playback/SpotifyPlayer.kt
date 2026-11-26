@@ -267,7 +267,7 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (lyricMetadataMediaId != songId) currentLyricLine = null
         lyricMetadataMediaId = songId
         fullLyricInfo = info
-        publishLyricMetadata(songId)
+        publishLyricMetadata(songId, includeFullLyricInfo = true, includeCurrentLine = false)
     }
 
     /** Sends only a metadata update; the ExoPlayer playlist and audio source remain untouched. */
@@ -308,15 +308,19 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         }
         if (trackChanged || lineChanged) {
             currentLyricLine = lyric
-            publishLyricMetadata(mediaId)
+            publishLyricMetadata(mediaId, includeFullLyricInfo = false, includeCurrentLine = true)
         }
     }
 
-    private fun publishLyricMetadata(mediaId: String) {
+    private fun publishLyricMetadata(
+        mediaId: String,
+        includeFullLyricInfo: Boolean,
+        includeCurrentLine: Boolean
+    ) {
         val args = Bundle().apply {
             putString(SpotifeurPlaybackService.EXTRA_LYRIC_MEDIA_ID, mediaId)
-            fullLyricInfo?.let { putString(SpotifeurPlaybackService.EXTRA_LYRIC_INFO, it) }
-            currentLyricLine?.let { putString(SpotifeurPlaybackService.EXTRA_CURRENT_LINE, it) }
+            if (includeFullLyricInfo) putString(SpotifeurPlaybackService.EXTRA_LYRIC_INFO, fullLyricInfo)
+            if (includeCurrentLine) putString(SpotifeurPlaybackService.EXTRA_CURRENT_LINE, currentLyricLine)
         }
         runCatching {
             controller?.sendCustomCommand(SpotifeurPlaybackService.LYRIC_UPDATE_COMMAND, args)
