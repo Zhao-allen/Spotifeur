@@ -658,6 +658,23 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
 
     // Publish the current timed lyric through MediaSession so Android's existing media card can show it.
     init {
+        // Fetch lyrics as soon as the active track changes. Previously this was only
+        // triggered by opening the lyrics UI, leaving background playback without data
+        // for MediaSession or external live-lyrics integrations.
+        scope.launch {
+            stablePlayerState
+                .map { it.currentSong }
+                .distinctUntilChanged { previous, current -> previous?.id == current?.id }
+                .collect { song ->
+                    if (song == null) {
+                        lyricsJob?.cancel()
+                        mutableLyrics.value = LyricsState()
+                        model.player.updateCurrentLyrics(null)
+                    } else {
+                        loadLyricsForCurrentSong()
+                    }
+                }
+        }
         scope.launch {
             combine(stablePlayerState, currentPlaybackPosition, lyricsSyncOffset) { state, position, offset ->
                 Triple(state, position, offset)
@@ -684,6 +701,7 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
                 ?: lyricsRepository.fromSpotify(song, model.lyricsSource())
                 ?: if (settings.value.lyricsFallback) lyricsRepository.fromLrcLib(song) else null
             mutableLyrics.value = LyricsState(song.id, lyrics = lyrics, offset = offset)
+            model.player.updateLyricsInfo(song.title, song.displayArtist, song.album, song.id, lyrics?.synced.orEmpty())
         }
     }
     /** Called by the "fetch" dialog: the source chain, then its picker when asked for. */
@@ -695,6 +713,7 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
             val direct = if (forcePick) null else lyricsRepository.fromSpotify(song, model.lyricsSource()) ?: lyricsRepository.fromLrcLib(song)
             if (direct != null) {
                 mutableLyrics.update { it.copy(songId = song.id, lyrics = direct, loading = false) }
+                model.player.updateLyricsInfo(song.title, song.displayArtist, song.album, song.id, direct.synced.orEmpty())
                 mutableLyricsSearch.value = LyricsSearchUiState.Success(direct)
             } else showLyricsResults(song.title, song.artist)
         }
