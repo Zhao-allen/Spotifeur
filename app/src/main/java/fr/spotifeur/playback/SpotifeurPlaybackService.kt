@@ -187,7 +187,7 @@ class SpotifeurPlaybackService : MediaSessionService() {
         const val EXTRA_LYRIC_MEDIA_ID = "media_id"
         const val EXTRA_LYRIC_INFO = "lyric_info"
         const val EXTRA_CURRENT_LINE = "current_line"
-        val LYRIC_UPDATE_COMMAND = SessionCommand(ACTION_UPDATE_LYRICS, SessionCommand.COMMAND_CODE_SESSION)
+        val LYRIC_UPDATE_COMMAND = SessionCommand(ACTION_UPDATE_LYRICS, Bundle.EMPTY)
         /** Downloads first, then the recent cache, then the network. Nothing is written to downloads while listening. */
         fun youTubeCacheChain(context: android.content.Context): YouTubeChain {
             val recent = CacheDataSource.Factory().setCache(AudioCache.cache(context)).setCacheKeyFactory(AudioCache.keys)
