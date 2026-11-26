@@ -701,6 +701,7 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
                 ?: lyricsRepository.fromSpotify(song, model.lyricsSource())
                 ?: if (settings.value.lyricsFallback) lyricsRepository.fromLrcLib(song) else null
             mutableLyrics.value = LyricsState(song.id, lyrics = lyrics, offset = offset)
+            model.player.updateLyricsInfo(song.title, song.displayArtist, song.album, song.id, lyrics?.synced.orEmpty())
         }
     }
     /** Called by the "fetch" dialog: the source chain, then its picker when asked for. */
@@ -712,6 +713,7 @@ class PlayerViewModel(val model: SpotifeurModel, private val scope: CoroutineSco
             val direct = if (forcePick) null else lyricsRepository.fromSpotify(song, model.lyricsSource()) ?: lyricsRepository.fromLrcLib(song)
             if (direct != null) {
                 mutableLyrics.update { it.copy(songId = song.id, lyrics = direct, loading = false) }
+                model.player.updateLyricsInfo(song.title, song.displayArtist, song.album, song.id, direct.synced.orEmpty())
                 mutableLyricsSearch.value = LyricsSearchUiState.Success(direct)
             } else showLyricsResults(song.title, song.artist)
         }
