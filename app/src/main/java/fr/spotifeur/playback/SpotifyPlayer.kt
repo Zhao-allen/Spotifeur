@@ -192,8 +192,8 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (failed) player.prepare()
     } }
     /**
-     * Mirrors the timed lyric into the MediaSession artist field so Android updates the existing
-     * media card. Only metadata changes; the active URI, DRM configuration and queue stay intact.
+     * Shows the artist in the media card until timed lyrics begin, then temporarily uses
+     * the artist line for the current lyric. The title remains unchanged.
      */
     fun updateCurrentLyrics(line: String?, originalArtist: String?, songId: String?) {
         val player = controller ?: return
@@ -202,23 +202,25 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         if (index !in 0 until player.mediaItemCount) return
         val current = player.getMediaItemAt(index)
         if (songId != null && current.mediaId != songId) return
-        val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+
         val extras = current.mediaMetadata.extras
         val title = extras?.getString(ORIGINAL_TITLE)?.takeIf { it.isNotBlank() }
             ?: current.mediaMetadata.title?.toString().orEmpty()
         val artist = extras?.getString(ORIGINAL_ARTIST)?.takeIf { it.isNotBlank() }
             ?: originalArtist?.trim().orEmpty()
-        // Keep semantic title/artist intact. Android's display-specific fields are intended
-        // for a composed first line and a distinct secondary line in media controls.
-        val displayTitle = if (artist.isBlank()) title else "$title · $artist"
-        val displayLyric = lyric.orEmpty()
-        if (current.mediaMetadata.displayTitle?.toString() == displayTitle &&
-            current.mediaMetadata.subtitle?.toString() == displayLyric) return
+        val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
+        // One secondary line only: artist before lyrics, current lyric once available.
+        val secondaryText = lyric ?: artist
+        if (current.mediaMetadata.title?.toString() == title &&
+            current.mediaMetadata.artist?.toString().orEmpty() == secondaryText &&
+            current.mediaMetadata.displayTitle == null &&
+            current.mediaMetadata.subtitle == null) return
+
         val metadata = current.mediaMetadata.buildUpon()
             .setTitle(title)
-            .setArtist(artist)
-            .setDisplayTitle(displayTitle)
-            .setSubtitle(displayLyric)
+            .setArtist(secondaryText)
+            .setDisplayTitle(null)
+            .setSubtitle(null)
             .build()
         player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
     }
