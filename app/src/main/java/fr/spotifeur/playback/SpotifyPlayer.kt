@@ -58,7 +58,10 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
     private val appContext = context.applicationContext
     private val mutableState = MutableStateFlow(Playback())
     val state = mutableState.asStateFlow()
-    private var controller: MediaController? = null\n    private val superLyricPublisher = SuperLyricPublisher(appContext)\n    private var lastPublishedLyric: String? = null\n    private var lastPublishedTrackId: String? = null
+    private var controller: MediaController? = null
+    private val superLyricPublisher = SuperLyricPublisher(appContext)
+    private var lastPublishedLyric: String? = null
+    private var lastPublishedTrackId: String? = null
     private var pending: Pair<List<Music>, Int>? = null
     private val future = MediaController.Builder(context,
         SessionToken(context, ComponentName(context, SpotifeurPlaybackService::class.java))).buildAsync()
