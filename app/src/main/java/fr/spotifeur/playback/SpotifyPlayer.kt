@@ -239,70 +239,84 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
         before = emptyList(); after = emptyList()
         controller?.stop(); controller?.clearMediaItems(); mutableState.value = Playback(shuffle = ShuffleMemory.enabled)
     }
-    /** Publishes the complete timed LRC payload for lyric-aware MediaSession clients. */
+    private var lyricMetadataMediaId: String? = null
+    private var fullLyricInfo: String? = null
+    private var currentLyricLine: String? = null
+
+    /** Publishes full timed LRC data to the playback service without replacing a queue item. */
     fun updateLyricsInfo(title: String, artist: String, album: String, songId: String, lines: List<fr.spotifeur.data.model.SyncedLine>) {
         val player = controller ?: return
         val index = player.currentMediaItemIndex
         if (index !in 0 until player.mediaItemCount) return
-        val current = player.getMediaItemAt(index)
-        if (current.mediaId != songId) return
+        if (player.getMediaItemAt(index).mediaId != songId) return
         val lrc = lines.filter { it.line.isNotBlank() }.joinToString("\n") { line ->
             val ms = line.time.coerceAtLeast(0)
             "[%02d:%02d.%03d]%s".format(java.util.Locale.ROOT, ms / 60000, ms / 1000 % 60, ms % 1000, line.line)
         }
-        val extras = Bundle(current.mediaMetadata.extras ?: Bundle()).apply {
-            putString("lyricInfo", org.json.JSONObject().apply {
-                put("songName", title)
-                put("artist", artist)
-                put("album", album)
-                put("songId", songId)
-                put("lyricType", 0)
-                put("provider", "fr.spotifeur")
-                put("source", "fr.spotifeur")
-                put("noLyric", lrc.isBlank())
-                put("lyric", lrc)
-            }.toString())
-        }
-        val lyricPayload = extras.getString("lyricInfo").orEmpty()
-        // Media3 MediaMetadata equality ignores extras; change a metadata field as a refresh sentinel.
-        val metadata = current.mediaMetadata.buildUpon()
-            .setExtras(extras)
-            .setDiscSubtitle("lyricInfo:${lyricPayload.hashCode()}")
-            .build()
-        player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
+        val info = org.json.JSONObject().apply {
+            put("songName", title)
+            put("artist", artist)
+            put("album", album)
+            put("songId", songId)
+            put("lyricType", 0)
+            put("provider", "fr.spotifeur")
+            put("source", "fr.spotifeur")
+            put("noLyric", lrc.isBlank())
+            put("lyric", lrc)
+        }.toString()
+        if (lyricMetadataMediaId != songId) currentLyricLine = null
+        lyricMetadataMediaId = songId
+        fullLyricInfo = info
+        publishLyricMetadata(songId)
     }
 
-    /** Updates the active media-session card with the timed lyric, without replacing the audio source. */
+    /** Sends only a metadata update; the ExoPlayer playlist and audio source remain untouched. */
     fun updateCurrentLyrics(line: String?) {
         val player = controller ?: return
-        if (!player.isCommandAvailable(Player.COMMAND_CHANGE_MEDIA_ITEMS)) return
         val index = player.currentMediaItemIndex
         if (index !in 0 until player.mediaItemCount) return
-        val current = player.getMediaItemAt(index)
+        val mediaId = player.getMediaItemAt(index).mediaId
+        if (lyricMetadataMediaId != mediaId) {
+            lyricMetadataMediaId = mediaId
+            fullLyricInfo = null
+            currentLyricLine = null
+            lastPublishedLyric = null
+            lastPublishedTrackId = null
+        }
         val lyric = line?.trim()?.takeIf { it.isNotEmpty() }
-        val position = player.currentPosition.coerceAtLeast(0L)
-        val title = current.mediaMetadata.title?.toString()
-        val artist = current.mediaMetadata.artist?.toString()
-        val album = current.mediaMetadata.albumTitle?.toString()
-        if (lastPublishedTrackId != current.mediaId || lastPublishedLyric != lyric) {
-            // Publish only on line changes; playback position is sampled several times per second.
-            superLyricPublisher.publish(title, artist, album, lyric, position, position + 5_000L)
-            // Keep a separate overlay surface for lock-screen lyric display when overlay access is granted.
+        if (lastPublishedTrackId != mediaId || lastPublishedLyric != lyric) {
+            val position = player.currentPosition.coerceAtLeast(0L)
+            val current = player.getMediaItemAt(index)
+            superLyricPublisher.publish(
+                current.mediaMetadata.title?.toString(),
+                current.mediaMetadata.artist?.toString(),
+                current.mediaMetadata.albumTitle?.toString(),
+                lyric,
+                position,
+                position + 5_000L
+            )
+            // Overlay is an optional fallback only; Android background-start restrictions may block it.
             runCatching {
                 val intent = Intent(appContext, LiveLyricOverlayService::class.java)
                     .putExtra(LiveLyricOverlayService.EXTRA_LINE, lyric.orEmpty())
                 if (lyric == null) appContext.stopService(intent) else appContext.startService(intent)
             }
             lastPublishedLyric = lyric
-            lastPublishedTrackId = current.mediaId
+            lastPublishedTrackId = mediaId
         }
-        if (current.mediaMetadata.subtitle?.toString() == lyric &&
-            current.mediaMetadata.description?.toString() == lyric) return
-        val metadata = current.mediaMetadata.buildUpon()
-            .setSubtitle(lyric)
-            .setDescription(lyric)
-            .build()
-        player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
+        currentLyricLine = lyric
+        publishLyricMetadata(mediaId)
+    }
+
+    private fun publishLyricMetadata(mediaId: String) {
+        val args = Bundle().apply {
+            putString(SpotifeurPlaybackService.EXTRA_LYRIC_MEDIA_ID, mediaId)
+            fullLyricInfo?.let { putString(SpotifeurPlaybackService.EXTRA_LYRIC_INFO, it) }
+            currentLyricLine?.let { putString(SpotifeurPlaybackService.EXTRA_CURRENT_LINE, it) }
+        }
+        runCatching {
+            controller?.sendCustomCommand(SpotifeurPlaybackService.LYRIC_UPDATE_COMMAND, args)
+        }
     }
     fun pause() { controller?.pause() }
     fun setVolume(volume: Float) { controller?.volume = volume }
