@@ -208,14 +208,17 @@ class SpotifyPlayer(context: Context, scope: CoroutineScope) : AutoCloseable {
             ?: current.mediaMetadata.title?.toString().orEmpty()
         val artist = extras?.getString(ORIGINAL_ARTIST)?.takeIf { it.isNotBlank() }
             ?: originalArtist?.trim().orEmpty()
-        // Target layout: title + artist on the first line, current lyric on the second.
+        // Keep semantic title/artist intact. Android's display-specific fields are intended
+        // for a composed first line and a distinct secondary line in media controls.
         val displayTitle = if (artist.isBlank()) title else "$title · $artist"
         val displayLyric = lyric.orEmpty()
-        if (current.mediaMetadata.title?.toString() == displayTitle &&
-            current.mediaMetadata.artist?.toString() == displayLyric) return
+        if (current.mediaMetadata.displayTitle?.toString() == displayTitle &&
+            current.mediaMetadata.subtitle?.toString() == displayLyric) return
         val metadata = current.mediaMetadata.buildUpon()
-            .setTitle(displayTitle)
-            .setArtist(displayLyric)
+            .setTitle(title)
+            .setArtist(artist)
+            .setDisplayTitle(displayTitle)
+            .setSubtitle(displayLyric)
             .build()
         player.replaceMediaItem(index, current.buildUpon().setMediaMetadata(metadata).build())
     }
