@@ -48,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -132,9 +133,14 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
         HomeShelf.LOCAL_FILES to stringResource(R.string.home_local_files),
     )
     val library by model.library.collectAsStateWithLifecycle()
+    val recommendations by model.homeRecommendations.collectAsStateWithLifecycle()
+    val online by model.online.collectAsStateWithLifecycle()
     val hasSong by ui.stablePlayerStateHasSong()
     val navBarCompactMode by ui.navBarCompactMode.collectAsStateWithLifecycle()
     val content = library.content
+    LaunchedEffect(content?.playlists?.map { it.id }, content?.savedTrackCount, recent.map { it.id }, online) {
+        if (content != null && online) model.refreshHomeRecommendations()
+    }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     val scrollThresholdPx = remember(density) { with(density) { 180.dp.toPx() } }
@@ -196,6 +202,56 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
+                            }
+                        }
+                    }
+                    if (recommendations.tracks.isNotEmpty() || recommendations.loading || recommendations.error != null) {
+                        item(key = "personalized_recommendations", contentType = "personalized_recommendations") {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "为你推荐",
+                                        modifier = Modifier.padding(start = 6.dp),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    IconButton(
+                                        onClick = { model.refreshHomeRecommendations(force = true) },
+                                        enabled = !recommendations.loading,
+                                    ) {
+                                        if (recommendations.loading) {
+                                            ContainedLoadingIndicator()
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Rounded.SwapVert,
+                                                contentDescription = "换一批",
+                                                tint = MaterialTheme.colorScheme.secondary,
+                                            )
+                                        }
+                                    }
+                                }
+                                if (recommendations.tracks.isNotEmpty()) {
+                                    ShelfItems(
+                                        recommendations.tracks,
+                                        ShelfStyle.CAROUSEL,
+                                        ui,
+                                        onClick = { ui.playItem(it) },
+                                        onLongClick = showOptions,
+                                    ) { item, modifier ->
+                                        PinnedPill(item, ui, modifier, { ui.playItem(item) }, { showOptions(item) })
+                                    }
+                                } else if (recommendations.error != null) {
+                                    Text(
+                                        recommendations.error.orEmpty(),
+                                        Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
                             }
                         }
                     }
