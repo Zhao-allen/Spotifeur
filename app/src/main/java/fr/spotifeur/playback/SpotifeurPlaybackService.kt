@@ -140,7 +140,9 @@ class SpotifeurPlaybackService : MediaSessionService() {
                             sessionPlayer.updateLyrics(
                                 mediaId,
                                 args.getString(EXTRA_LYRIC_INFO),
-                                args.getString(EXTRA_CURRENT_LINE)
+                                args.getString(EXTRA_CURRENT_LINE),
+                                args.containsKey(EXTRA_LYRIC_INFO),
+                                args.containsKey(EXTRA_CURRENT_LINE)
                             )
                         }
                         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
