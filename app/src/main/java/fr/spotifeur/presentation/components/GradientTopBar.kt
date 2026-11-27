@@ -125,13 +125,13 @@ fun HomeGradientTopBar(
                 Surface(
                     modifier = Modifier.padding(start = 4.dp),
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = Color.Transparent,
                 ) {
                     Text(
                         text = stringResource(R.string.app_name),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
