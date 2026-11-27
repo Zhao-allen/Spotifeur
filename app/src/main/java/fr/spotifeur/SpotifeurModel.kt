@@ -118,6 +118,8 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     fun recommendationFeedback(item: Music, action: RecommendationFeedbackStore.Action) {
         if (item.source != fr.spotifeur.data.MusicSource.Spotify || item.kind != MusicKind.Track) return
         recommendationFeedbackStore.record(item, action)
+        homeRecommendationsJob?.cancel()
+        homeRecommendationsJob = null
         mutableMessage.value = when (action) {
             RecommendationFeedbackStore.Action.NOT_INTERESTED -> "已减少这首歌的推荐"
             RecommendationFeedbackStore.Action.LESS_LIKE_ARTIST -> "已减少类似歌曲的推荐"
@@ -944,14 +946,7 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     fun refreshHomeRecommendations(force: Boolean = false) {
         if (homeRecommendationsJob?.isActive == true) return
 
-        // Once a useful pool exists, refresh is an instant shuffle rather than another network crawl.
-        if (force && homeRecommendationPool.size > 20) {
-            homeRecommendationOffset = (homeRecommendationOffset + 20) % homeRecommendationPool.size
-            val rotated = (homeRecommendationPool.drop(homeRecommendationOffset) +
-                homeRecommendationPool.take(homeRecommendationOffset)).take(50)
-            mutableHomeRecommendations.value = HomeRecommendationsUi(tracks = rotated)
-            return
-        }
+        // A forced refresh rebuilds candidates and reranks them against the latest profile and feedback.
         if (!force && mutableHomeRecommendations.value.tracks.isNotEmpty()) return
         val content = mutableLibrary.value.content ?: return
         if (!online.value || catalog == null) return
