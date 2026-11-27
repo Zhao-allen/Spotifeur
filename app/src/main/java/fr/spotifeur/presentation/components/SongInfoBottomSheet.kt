@@ -174,11 +174,6 @@ fun SongInfoBottomSheet(
                 playerViewModel = playerViewModel,
                 onStartRadio = if (spotifyPages) onStartRadio else null,
             )
-            if (spotifyPages) {
-                TextButton(onClick = { playerViewModel.model.recommendationFeedback(song.toMusic(), fr.spotifeur.data.RecommendationFeedbackStore.Action.NOT_INTERESTED); onDismiss() }, modifier = Modifier.fillMaxWidth()) { Text("不感兴趣 · 少推荐这首歌") }
-                TextButton(onClick = { playerViewModel.model.recommendationFeedback(song.toMusic(), fr.spotifeur.data.RecommendationFeedbackStore.Action.LESS_LIKE_ARTIST); onDismiss() }, modifier = Modifier.fillMaxWidth()) { Text("少推荐类似歌曲") }
-                TextButton(onClick = { playerViewModel.model.recommendationFeedback(song.toMusic(), fr.spotifeur.data.RecommendationFeedbackStore.Action.BLOCK_ARTIST); onDismiss() }, modifier = Modifier.fillMaxWidth()) { Text("不再推荐这位艺人") }
-            }
             onRemoveFromPlaylist?.let { remove ->
                 TextButton(onClick = { remove(); onDismiss() }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.playlist_remove_track))
