@@ -142,7 +142,6 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
         if (content != null && online) model.refreshHomeRecommendations()
     }
     val listState = rememberLazyListState()
-    var selectedHomeCategory by rememberSaveable { mutableStateOf("全部") }
     val density = LocalDensity.current
     val scrollThresholdPx = remember(density) { with(density) { 180.dp.toPx() } }
     val isScrolled by remember {
@@ -206,19 +205,7 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                             }
                         }
                     }
-                    item(key = "home_category_bar", contentType = "home_category_bar") {
-                        HomeCategoryBar(
-                            selected = selectedHomeCategory,
-                            onSelected = { selectedHomeCategory = it },
-                        )
-                    }
-                    if (selectedHomeCategory == "全部") {
-                        item(key = "home_quick_actions", contentType = "home_quick_actions") {
-                            HomeQuickActions(onCategorySelected = { selectedHomeCategory = it })
-                        }
-                    }
-                    if ((selectedHomeCategory == "全部" || selectedHomeCategory == "推荐") &&
-                        (recommendations.tracks.isNotEmpty() || recommendations.loading || recommendations.error != null)) {
+                    if (recommendations.tracks.isNotEmpty() || recommendations.loading || recommendations.error != null) {
                         item(key = "personalized_recommendations", contentType = "personalized_recommendations") {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Row(
@@ -269,19 +256,7 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                         }
                     }
                     // Shelves in the order, layout and size chosen in Settings → Home.
-                    settings.homeLayout.filter { config ->
-                        config.visible && when (selectedHomeCategory) {
-                            "推荐" -> config.shelf == HomeShelf.PINS
-                            "最近" -> config.shelf == HomeShelf.RECENT
-                            "歌单" -> config.shelf in setOf(
-                                HomeShelf.PLAYLISTS, HomeShelf.MULTI_SERVICE,
-                                HomeShelf.SPOTIFY_PLAYLISTS, HomeShelf.YOUTUBE_PLAYLISTS
-                            )
-                            "专辑" -> config.shelf == HomeShelf.ALBUMS || config.shelf == HomeShelf.ARTISTS
-                            "本地" -> config.shelf in setOf(HomeShelf.DOWNLOADS, HomeShelf.LOCAL_FILES)
-                            else -> true
-                        }
-                    }.forEach { config ->
+                    settings.homeLayout.filter { it.visible }.forEach { config ->
                         val multi = localPlaylists.map { it.asMusic().copy(subtitle = localBadge + " · " + it.asMusic().subtitle) }
                         val openTab: (fr.spotifeur.data.model.LibraryTabId) -> () -> Unit = { tab -> { ui.requestedLibraryTab.value = tab.storageKey; openLibrary() } }
                         val title = when (config.shelf) {
@@ -356,133 +331,6 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
 
     if (reordering) PinsReorderSheet(pins, ui, model, onDismiss = { reordering = false })
     MusicOptionsHost(ui, navController, optionsFor) { optionsFor = null }
-}
-
-
-@Composable
-private fun HomeCategoryBar(selected: String, onSelected: (String) -> Unit) {
-    val categories = listOf("全部", "推荐", "最近", "歌单", "专辑", "本地")
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
-    ) {
-        items(categories, key = { it }) { category ->
-            val active = selected == category
-            Surface(
-                onClick = { onSelected(category) },
-                shape = RoundedCornerShape(50),
-                color = if (active) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = if (active) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-            ) {
-                Text(
-                    text = category,
-                    modifier = Modifier.padding(horizontal = 17.dp, vertical = 10.dp),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeQuickActions(onCategorySelected: (String) -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
-    ) {
-        Text(
-            text = "快捷入口",
-            modifier = Modifier.padding(start = 6.dp),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-            HomeQuickAction(
-                symbol = "♫",
-                title = "最近播放",
-                subtitle = "接着上次听",
-                modifier = Modifier.weight(1f),
-                onClick = { onCategorySelected("最近") },
-            )
-            HomeQuickAction(
-                symbol = "▤",
-                title = "我的歌单",
-                subtitle = "收藏与创建",
-                modifier = Modifier.weight(1f),
-                onClick = { onCategorySelected("歌单") },
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-            HomeQuickAction(
-                symbol = "▧",
-                title = "专辑与艺人",
-                subtitle = "探索音乐库",
-                modifier = Modifier.weight(1f),
-                onClick = { onCategorySelected("专辑") },
-            )
-            HomeQuickAction(
-                symbol = "♫",
-                title = "本地音乐",
-                subtitle = "设备中的歌曲",
-                modifier = Modifier.weight(1f),
-                onClick = { onCategorySelected("本地") },
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomeQuickAction(
-    symbol: String,
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(82.dp),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 13.dp, vertical = 11.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(11.dp),
-        ) {
-            Box(
-                modifier = Modifier.size(42.dp).clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = symbol,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
 }
 
 @Composable
