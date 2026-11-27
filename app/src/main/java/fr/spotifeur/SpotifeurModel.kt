@@ -9,6 +9,8 @@ import fr.spotifeur.data.CatalogDetail
 import fr.spotifeur.data.CatalogStore
 import fr.spotifeur.data.FavoriteChange
 import fr.spotifeur.data.NetworkMonitor
+import fr.spotifeur.data.RecommendationFeedbackStore
+import fr.spotifeur.data.RecommendationRanker
 import fr.spotifeur.data.SpotifyAuthRequired
 import fr.spotifeur.data.applyFavoriteChanges
 import fr.spotifeur.data.playlistMosaic
@@ -112,6 +114,19 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
     val localTracks = mutableLocalTracks.asStateFlow()
     val localPlaylistStore = LocalPlaylistStore(app)
     val listeningHistory = fr.spotifeur.data.ListeningHistoryStore(app)
+    private val recommendationFeedbackStore = RecommendationFeedbackStore(app)
+    fun recommendationFeedback(item: Music, action: RecommendationFeedbackStore.Action) {
+        if (item.source != fr.spotifeur.data.MusicSource.Spotify || item.kind != MusicKind.Track) return
+        recommendationFeedbackStore.record(item, action)
+        mutableMessage.value = when (action) {
+            RecommendationFeedbackStore.Action.NOT_INTERESTED -> "已减少这首歌的推荐"
+            RecommendationFeedbackStore.Action.LESS_LIKE_ARTIST -> "已减少类似歌曲的推荐"
+            RecommendationFeedbackStore.Action.BLOCK_ARTIST -> "已不再推荐这位艺人"
+        }
+        homeRecommendationPool = emptyList()
+        homeRecommendationOffset = 0
+        refreshHomeRecommendations(force = true)
+    }
     val localPlaylists = localPlaylistStore.playlists
     fun refreshLocalTracks() { viewModelScope.launch { mutableLocalTracks.value = localLibrary.load() } }
     val pinnedStoreForBackup get() = pinnedStore
@@ -945,11 +960,11 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
             mutableHomeRecommendations.update { it.copy(loading = true, error = null) }
             try {
                 val saved = content.savedTracks.filter { it.kind == MusicKind.Track }
-                val recent = mutableRecent.value.filter { it.kind == MusicKind.Track }
+                val recent = mutableRecent.value.filter { it.kind == MusicKind.Track && it.source == fr.spotifeur.data.MusicSource.Spotify }
                 // Use the already-loaded local history here. Calling fullListeningHistory() would
                 // perform another remote history request on every refresh.
                 val historyTracks = listeningHistory.entries.value.map { it.track }
-                    .filter { it.kind == MusicKind.Track }
+                    .filter { it.kind == MusicKind.Track && it.source == fr.spotifeur.data.MusicSource.Spotify }
                 val playlists = content.playlists
                     .filter { it.id.startsWith("spotify:playlist:") }
                     .take(8)
@@ -1045,7 +1060,13 @@ class SpotifeurModel(private val app: Application) : AndroidViewModel(app) {
                     if (results.size >= 120) break
                 }
 
-                val ranked = results.values.toList()
+                val ranked = RecommendationRanker.rank(
+                    candidates = results.values.toList(),
+                    saved = saved,
+                    recent = recent,
+                    spotifeurHistory = historyTracks,
+                    feedback = recommendationFeedbackStore,
+                )
                 homeRecommendationPool = ranked
                 homeRecommendationOffset = 0
                 mutableHomeRecommendations.value = HomeRecommendationsUi(
