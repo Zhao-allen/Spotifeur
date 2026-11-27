@@ -6,10 +6,7 @@ import android.content.ContextWrapper
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -17,7 +14,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import fr.spotifeur.presentation.viewmodel.ColorSchemePair
@@ -44,23 +40,16 @@ fun SpotifeurStatusBarStyle(
 ) {
     val view = LocalView.current
     if (view.isInEditMode) return
-
     val updateNavigationBar = navigationColor != null
     SideEffect {
         val window = view.context.findActivity()?.window ?: return@SideEffect
         window.statusBarColor = android.graphics.Color.TRANSPARENT
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isStatusBarContrastEnforced = false
-        }
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.isStatusBarContrastEnforced = false
         WindowCompat.getInsetsController(window, view).run {
             isAppearanceLightStatusBars = useDarkIcons
-
             if (updateNavigationBar) {
                 window.navigationBarColor = android.graphics.Color.TRANSPARENT
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    window.isNavigationBarContrastEnforced = false
-                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.isNavigationBarContrastEnforced = false
                 isAppearanceLightNavigationBars = useDarkNavigationIcons
             }
         }
@@ -69,30 +58,39 @@ fun SpotifeurStatusBarStyle(
 
 val DarkColorScheme = darkColorScheme(
     primary = BrandPurplePrimary,
+    onPrimary = Color(0xFF21183D),
+    primaryContainer = Color(0xFF30284A),
+    onPrimaryContainer = Color(0xFFE8E0FF),
     secondary = BrandPink,
+    onSecondary = Color(0xFF321D2B),
+    secondaryContainer = Color(0xFF3A2936),
+    onSecondaryContainer = Color(0xFFFFD9EC),
     tertiary = BrandOrange,
+    onTertiary = Color(0xFF382311),
     background = BrandPurpleDark,
-    surface = BrandSurface,
-    onPrimary = BrandWhite,
-    onSecondary = BrandWhite,
-    onTertiary = BrandWhite,
     onBackground = BrandWhite,
-    onSurface = BrandLightPurple, // Texto sobre superficies
-    error = Color(0xFFFF5252),
-    onError = BrandWhite
+    surface = BrandSurface,
+    onSurface = BrandLightPurple,
+    surfaceVariant = Color(0xFF252630),
+    onSurfaceVariant = Color(0xFFB9B5C5),
+    outline = Color(0xFF555361),
+    outlineVariant = Color(0xFF383944),
+    surfaceTint = BrandPurplePrimary,
+    error = Color(0xFFFF7777),
+    onError = Color(0xFF3D0808)
 )
 
 val LightColorScheme = lightColorScheme(
     primary = LightPrimary,
-    onPrimary = BrandWhite,
+    onPrimary = Color.White,
     primaryContainer = LightPrimaryContainer,
     onPrimaryContainer = LightOnPrimaryContainer,
-    secondary = BrandPink,
-    onSecondary = BrandWhite,
-    secondaryContainer = BrandPink.copy(alpha = 0.15f),
-    onSecondaryContainer = BrandPink.copy(alpha = 0.85f),
-    tertiary = BrandOrange,
-    onTertiary = BrandBlack,
+    secondary = Color(0xFF98617F),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF5DCEB),
+    onSecondaryContainer = Color(0xFF3D2334),
+    tertiary = Color(0xFF9A6236),
+    onTertiary = Color.White,
     background = LightBackground,
     onBackground = LightOnSurface,
     surface = LightSurface,
@@ -100,10 +98,10 @@ val LightColorScheme = lightColorScheme(
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = LightOnSurfaceVariant,
     outline = LightOutline,
-    outlineVariant = LightOutline.copy(alpha = 0.6f),
+    outlineVariant = LightOutline.copy(alpha = 0.65f),
     surfaceTint = LightPrimary,
-    error = Color(0xFFD32F2F),
-    onError = BrandWhite
+    error = Color(0xFFBA1A1A),
+    onError = Color.White
 )
 
 @Composable
@@ -112,28 +110,12 @@ fun SpotifeurTheme(
     colorSchemePairOverride: ColorSchemePair? = null,
     content: @Composable () -> Unit
 ) {
-    val context = LocalContext.current
+    // Keep the app's identity consistent across devices instead of allowing
+    // Android wallpaper colors to recolor navigation, sheets and library UI.
     val finalColorScheme = when {
-        colorSchemePairOverride == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            // Tema dinámico del sistema como prioridad si no hay override
-            try {
-                if (darkTheme) {
-                    dynamicDarkColorScheme(context).vividAccents()
-                } else {
-                    dynamicLightColorScheme(context).vividAccents().deepControlsForLight()
-                }
-            } catch (e: Exception) {
-                // Fallback a los defaults si dynamic colors falla (raro, pero posible en algunos dispositivos)
-                if (darkTheme) DarkColorScheme else LightColorScheme.deepControlsForLight()
-            }
-        }
-        colorSchemePairOverride != null -> {
-            // Usar el esquema del álbum si se proporciona
-            if (darkTheme) colorSchemePairOverride.dark else colorSchemePairOverride.light
-        }
-        // Fallback final a los defaults si no hay override ni dynamic colors aplicables
+        colorSchemePairOverride != null -> if (darkTheme) colorSchemePairOverride.dark else colorSchemePairOverride.light
         darkTheme -> DarkColorScheme
-        else -> LightColorScheme.deepControlsForLight()
+        else -> LightColorScheme
     }
 
     SpotifeurStatusBarStyle(
