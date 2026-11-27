@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -95,9 +96,9 @@ internal fun MiniPlayerContentInternal(
                 SmartImage(
                     model = albumArtModel,
                     contentDescription = stringResource(R.string.album_cover_for, song.title),
-                    shape = CircleShape,
-                    targetSize = Size(150, 150),
-                    modifier = Modifier.size(44.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    targetSize = Size(160, 160),
+                    modifier = Modifier.size(48.dp),
                     placeholderModel = if (albumArtModel?.startsWith("telegram_art") == true) {
                         "$albumArtModel?quality=thumb"
                     } else null
