@@ -209,14 +209,14 @@ fun HomeScreen(model: SpotifeurModel, navController: NavHostController, paddingV
                         item(key = "personalized_recommendations", contentType = "personalized_recommendations") {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
                                         text = "为你推荐",
                                         modifier = Modifier.padding(start = 6.dp),
-                                        style = MaterialTheme.typography.titleLarge,
+                                        style = MaterialTheme.typography.titleLarge.copy(letterSpacing = (-0.5).sp),
                                         fontWeight = FontWeight.SemiBold,
                                     )
                                     IconButton(
@@ -362,14 +362,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.homeShelf(
 @Composable
 private fun SectionHeader(title: String, onOpen: (() -> Unit)?) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             modifier = Modifier.padding(start = 6.dp),
             text = title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(letterSpacing = (-0.5).sp),
             fontWeight = FontWeight.SemiBold
         )
         if (onOpen != null) FilledIconButton(
